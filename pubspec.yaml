@@ -1,0 +1,52 @@
+name: edunova_mobile
+description: EduNova — o'quvchilar uchun mobil va planshet ilova.
+publish_to: "none"
+version: 0.1.0+1
+
+environment:
+  sdk: ">=3.5.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # State management
+  flutter_riverpod: ^2.6.1
+
+  # Networking
+  dio: ^5.7.0
+  web_socket_channel: ^3.0.1
+
+  # Routing
+  go_router: ^14.6.2
+
+  # Content
+  flutter_math_fork: ^0.7.2
+
+  # Charts (statistics) and avatar picking (profile edit)
+  fl_chart: ^0.69.2
+  image_picker: ^1.1.2
+
+  # Storage
+  flutter_secure_storage: ^9.2.2
+  shared_preferences: ^2.3.2
+
+  # PDF picking (quiz creation). 8.x compiles against android-34 and breaks
+  # the build; 10.x targets 36 like the rest of the plugins.
+  file_picker: ^10.2.0
+
+  # Sharing (lobby join code)
+  share_plus: ^10.1.2
+
+  # PDF export of a group session result
+  pdf: ^3.11.1
+  printing: ^5.13.4
+  path_provider: ^2.1.5
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
