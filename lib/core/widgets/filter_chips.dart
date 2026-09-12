@@ -19,6 +19,8 @@ class FilterChips<T> extends StatelessWidget {
     required this.selected,
     required this.onSelected,
     this.padding = EdgeInsets.zero,
+    this.wrap = false,
+    this.segmented = false,
   });
 
   final List<FilterOption<T>> options;
@@ -26,25 +28,59 @@ class FilterChips<T> extends StatelessWidget {
   final ValueChanged<T> onSelected;
   final EdgeInsetsGeometry padding;
 
+  /// Lets the chips flow onto a second line instead of scrolling out of sight.
+  /// The web does this on a narrow screen, where a clipped chip reads as a
+  /// layout bug rather than something scrollable.
+  final bool wrap;
+
+  /// Splits the width evenly between the options, like a segmented control.
+  /// For a short, fixed set this beats both scrolling and wrapping on a phone:
+  /// everything stays visible on one line and the targets get wider.
+  final bool segmented;
+
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
+
+    final pills = [
+      for (final option in options)
+        _Pill(
+          label: option.label,
+          icon: option.icon,
+          active: option.value == selected,
+          onTap: () => onSelected(option.value),
+          colors: c,
+          compact: segmented,
+        ),
+    ];
+
+    if (segmented) {
+      return Padding(
+        padding: padding,
+        child: Row(
+          children: [
+            for (var i = 0; i < pills.length; i++) ...[
+              Expanded(child: pills[i]),
+              if (i < pills.length - 1) const SizedBox(width: 8),
+            ],
+          ],
+        ),
+      );
+    }
+
+    if (wrap) {
+      return Padding(
+        padding: padding,
+        child: Wrap(spacing: 8, runSpacing: 8, children: pills),
+      );
+    }
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       padding: padding,
       child: Row(
         children: [
-          for (final option in options) ...[
-            _Pill(
-              label: option.label,
-              icon: option.icon,
-              active: option.value == selected,
-              onTap: () => onSelected(option.value),
-              colors: c,
-            ),
-            const SizedBox(width: 8),
-          ],
+          for (final pill in pills) ...[pill, const SizedBox(width: 8)],
         ],
       ),
     );
@@ -58,6 +94,7 @@ class _Pill extends StatelessWidget {
     required this.onTap,
     required this.colors,
     this.icon,
+    this.compact = false,
   });
 
   final String label;
@@ -65,6 +102,9 @@ class _Pill extends StatelessWidget {
   final VoidCallback onTap;
   final AppColors colors;
   final IconData? icon;
+
+  /// Tightens the paddings so three chips fit one phone row.
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -76,17 +116,26 @@ class _Pill extends StatelessWidget {
         customBorder: const StadiumBorder(),
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+          padding: EdgeInsets.symmetric(horizontal: compact ? 8 : 14, vertical: 9),
           child: Row(
             mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               if (icon != null) ...[
-                Icon(icon, size: 16, color: foreground),
-                const SizedBox(width: 6)
+                Icon(icon, size: compact ? 14 : 16, color: foreground),
+                SizedBox(width: compact ? 5 : 6),
               ],
-              Text(
-                label,
-                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: foreground),
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: compact ? 12 : 13,
+                    fontWeight: FontWeight.w600,
+                    color: foreground,
+                  ),
+                ),
               ),
             ],
           ),

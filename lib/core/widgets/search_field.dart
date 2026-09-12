@@ -12,6 +12,8 @@ class SearchField extends StatefulWidget {
     this.hint = 'Qidirish...',
     this.initialValue = '',
     this.debounce = const Duration(milliseconds: 300),
+    this.controller,
+    this.autofocus = false,
   });
 
   /// Called with the trimmed query after the user stops typing for [debounce].
@@ -20,18 +22,24 @@ class SearchField extends StatefulWidget {
   final String initialValue;
   final Duration debounce;
 
+  /// Supply one when the caller needs to clear the field itself.
+  final TextEditingController? controller;
+  final bool autofocus;
+
   @override
   State<SearchField> createState() => _SearchFieldState();
 }
 
 class _SearchFieldState extends State<SearchField> {
-  late final TextEditingController _controller = TextEditingController(text: widget.initialValue);
+  late final TextEditingController _controller =
+      widget.controller ?? TextEditingController(text: widget.initialValue);
   Timer? _timer;
 
   @override
   void dispose() {
     _timer?.cancel();
-    _controller.dispose();
+    // Only dispose the one this field created.
+    if (widget.controller == null) _controller.dispose();
     super.dispose();
   }
 
@@ -58,6 +66,7 @@ class _SearchFieldState extends State<SearchField> {
 
     return TextField(
       controller: _controller,
+      autofocus: widget.autofocus,
       onChanged: _changed,
       textInputAction: TextInputAction.search,
       style: TextStyle(fontSize: 14, color: c.textPrimary),

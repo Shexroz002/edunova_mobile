@@ -603,6 +603,51 @@ launcher icon and the in-app mark are the same shape:
 
 This is the one place the app deliberately differs from the web, which still uses a lightning bolt.
 
+## Natijalar sahifasi, webga moslash (2026-09-12)
+
+Checked against the web page in both themes at 375 px.
+
+- **Search**, which the app did not have at all: a toggle in the header opens the field, exactly as
+  the web does. The web filters server-side; the history is already loaded here, so the filter is
+  local and matches the same two fields — quiz title and subject.
+- **"Ko'rish" sheet** (`result_detail_sheet.dart`), the web's detail modal: score and grade, the
+  To'g'ri / Noto'g'ri / O'tkazilgan tallies, a segmented progress bar with its legend, the detail
+  rows, and a button through to the error analysis. Everything comes from the history row, so it
+  opens without a request. The web's "Quiz ID" row is dropped — it means nothing to a student.
+  The card's first button was "Tahlil", which jumped straight to the review; it is now "Ko'rish"
+  and opens this sheet, with the review one tap further in.
+- **Card redesigned** to the web's shape: score pill beside the grade badge, a progress bar, and the
+  counts as rounded chips instead of bare icons — previously a lone grade badge floated at the right
+  edge.
+- **Summary tiles are tinted** per accent in both themes, and "12 soat" no longer clipped to
+  "12 so…" (smaller ring, and the value scales down instead of ellipsing).
+- **Sort chips wrap** instead of scrolling "Eng yomon" out of sight; `FilterChips` gained a `wrap`
+  flag, and `SearchField` an optional external controller plus `autofocus`.
+
+**Second pass on the same page:**
+
+- **Sort chips** were wrapping onto two rows and left the counter stranded on a line of its own.
+  `FilterChips` gained a `segmented` mode: for a short fixed set the three options now split the
+  width evenly on one line, which beats both scrolling (clips "Eng yomon") and wrapping on a phone.
+- **Card actions carry the web's colours**: "Ko'rish" sky (`#38BDF8`, darkened to `#0284C7` on
+  light) and "Reyting" indigo, each on its own tint with a matching border. Two identical outlined
+  buttons read as the same action.
+- **Reyting sheet rebuilt** to the web's modal: quiz title, tinted meta chips (participants,
+  date, question count), a "Mening natijam" strip with its own bar, then the ranked rows — medal or
+  rank, avatar, name with a "Siz" badge, score bar, and `correct / total` over the percentage.
+  The percentage is shown once per row: "Mening natijam" carries it in the header, so its count
+  block omits it.
+
+The rating sheet **sizes itself to its content**: it was a `DraggableScrollableSheet` pinned at 72 %
+of the screen, so a session with one participant floated above a screenful of empty sheet. It is now
+a plain scroll view inside the modal's own constraints — short lists shrink, long ones stop at the
+screen and scroll. `test/leaderboard_sheet_test.dart` covers both, and was checked against the old
+behaviour: with the fixed sheet a solo participant measured **484 px** on a 720 px screen.
+
+One bug found while testing: the segmented progress bar was drawn as nothing at all. A `Row` gives
+its children a **loose** cross-axis constraint, so an empty `ColoredBox` collapsed to zero height;
+it needs `CrossAxisAlignment.stretch`.
+
 ## Next
 Tablet pass, part 2: test detali, guruh detali, sessiya natijasi, test ishlash, test yaratish and
 profil tahrirlash still need the same treatment.
