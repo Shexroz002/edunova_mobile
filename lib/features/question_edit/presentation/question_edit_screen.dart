@@ -243,37 +243,42 @@ class _EditorState extends ConsumerState<_Editor> {
         final leave = await _confirmDiscard();
         if (leave && context.mounted) context.pop();
       },
-      child: context.isLargeScreen
-          ? Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  flex: 6,
-                  child: ListView(
-                    padding: EdgeInsets.fromLTRB(padding, 0, padding / 2, 32),
-                    children: [form],
+      // A full-screen route has no bottom bar of its own, so without this the
+      // Saqlash button sits under the system navigation bar.
+      child: SafeArea(
+        top: false,
+        child: context.isLargeScreen
+            ? Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    flex: 6,
+                    child: ListView(
+                      padding: EdgeInsets.fromLTRB(padding, 0, padding / 2, 32),
+                      children: [form],
+                    ),
                   ),
-                ),
-                Expanded(
-                  flex: 5,
-                  child: ListView(
-                    padding: EdgeInsets.fromLTRB(padding / 2, 0, padding, 32),
-                    children: [preview],
+                  Expanded(
+                    flex: 5,
+                    child: ListView(
+                      padding: EdgeInsets.fromLTRB(padding / 2, 0, padding, 32),
+                      children: [preview],
+                    ),
                   ),
-                ),
-              ],
-            )
-          : ListView(
-              padding: EdgeInsets.fromLTRB(padding, 0, padding, 32),
-              children: [
-                ContentConstraint(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [form, const SizedBox(height: 16), preview],
+                ],
+              )
+            : ListView(
+                padding: EdgeInsets.fromLTRB(padding, 0, padding, 32),
+                children: [
+                  ContentConstraint(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [form, const SizedBox(height: 16), preview],
+                    ),
                   ),
-                ),
-              ],
-            ),
+                ],
+              ),
+      ),
     );
   }
 }

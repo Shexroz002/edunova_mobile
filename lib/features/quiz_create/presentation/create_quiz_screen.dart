@@ -126,55 +126,60 @@ class _CreateQuizScreenState extends ConsumerState<CreateQuizScreen> {
             tooltip: 'Orqaga',
           ),
         ),
-        body: ListView(
-          padding: EdgeInsets.fromLTRB(context.pagePadding, 0, context.pagePadding, 32),
-          children: [
-            ContentConstraint(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    job != null
-                        ? 'Jarayon tugashini kuting'
-                        : _method == null
-                            ? 'Test yaratish usulini tanlang'
-                            : subtitle,
-                    style: TextStyle(fontSize: 13, color: c.textMuted),
-                  ),
-                  const SizedBox(height: 16),
-                  if (job != null)
-                    JobProgressView(
-                      started: job,
-                      method: _method!,
-                      onDone: (quizId) {
-                        context.pop();
-                        context.push('/tests/$quizId');
-                      },
-                      onRetry: () => setState(() => _job = null),
-                    )
-                  else if (_method == null)
-                    _MethodStep(onPick: (m) => setState(() => _method = m))
-                  else
-                    _FormStep(
-                      method: _method!,
-                      pdf: _pdf,
-                      onPickPdf: _pickPdf,
-                      onClearPdf: () => setState(() => _pdf = null),
-                      subjectId: _subjectId,
-                      onSubject: (id) => setState(() => _subjectId = id),
-                      description: _description,
-                      onDescriptionChanged: () => setState(() {}),
-                      questions: _questions,
-                      onQuestions: (n) => setState(() => _questions = n),
-                      error: _error,
-                      starting: _starting,
-                      canSubmit: _canSubmit,
-                      onSubmit: _submit,
+        // A full-screen route has no bottom bar of its own, so without this
+        // the last action sits under the system navigation bar.
+        body: SafeArea(
+          top: false,
+          child: ListView(
+            padding: EdgeInsets.fromLTRB(context.pagePadding, 0, context.pagePadding, 32),
+            children: [
+              ContentConstraint(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      job != null
+                          ? 'Jarayon tugashini kuting'
+                          : _method == null
+                              ? 'Test yaratish usulini tanlang'
+                              : subtitle,
+                      style: TextStyle(fontSize: 13, color: c.textMuted),
                     ),
-                ],
+                    const SizedBox(height: 16),
+                    if (job != null)
+                      JobProgressView(
+                        started: job,
+                        method: _method!,
+                        onDone: (quizId) {
+                          context.pop();
+                          context.push('/tests/$quizId');
+                        },
+                        onRetry: () => setState(() => _job = null),
+                      )
+                    else if (_method == null)
+                      _MethodStep(onPick: (m) => setState(() => _method = m))
+                    else
+                      _FormStep(
+                        method: _method!,
+                        pdf: _pdf,
+                        onPickPdf: _pickPdf,
+                        onClearPdf: () => setState(() => _pdf = null),
+                        subjectId: _subjectId,
+                        onSubject: (id) => setState(() => _subjectId = id),
+                        description: _description,
+                        onDescriptionChanged: () => setState(() {}),
+                        questions: _questions,
+                        onQuestions: (n) => setState(() => _questions = n),
+                        error: _error,
+                        starting: _starting,
+                        canSubmit: _canSubmit,
+                        onSubmit: _submit,
+                      ),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

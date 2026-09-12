@@ -173,47 +173,52 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
       appBar: const PageAppBar(title: SizedBox.shrink()),
       // A full-screen route has no rail to narrow it, so the column is centred
       // and capped like every tab page.
-      body: ContentConstraint(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Padding(
-              padding: EdgeInsets.fromLTRB(context.pagePadding, 0, context.pagePadding, 14),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Expanded(
-                    child: Text(
-                      'Bildirishnomalar',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w800,
-                        color: c.textPrimary,
-                      ),
-                    ),
-                  ),
-                  if (unread > 0)
-                    TextButton(
-                      onPressed: _markingAll ? null : _markAllRead,
-                      style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
+      // A full-screen route has no bottom bar of its own; without this the last
+      // notification sits under the system navigation bar.
+      body: SafeArea(
+        top: false,
+        child: ContentConstraint(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: EdgeInsets.fromLTRB(context.pagePadding, 0, context.pagePadding, 14),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Expanded(
                       child: Text(
-                        _markingAll ? 'Kutilmoqda...' : "Barchasini o'qilgan qilish",
-                        textAlign: TextAlign.end,
-                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                        'Bildirishnomalar',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w800,
+                          color: c.textPrimary,
+                        ),
                       ),
                     ),
-                ],
+                    if (unread > 0)
+                      TextButton(
+                        onPressed: _markingAll ? null : _markAllRead,
+                        style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
+                        child: Text(
+                          _markingAll ? 'Kutilmoqda...' : "Barchasini o'qilgan qilish",
+                          textAlign: TextAlign.end,
+                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                  ],
+                ),
               ),
-            ),
-            Padding(
-              padding: EdgeInsets.fromLTRB(context.pagePadding, 0, context.pagePadding, 12),
-              child: _FilterDropdown(
-                value: _filter,
-                onChanged: (value) => setState(() => _filter = value),
+              Padding(
+                padding: EdgeInsets.fromLTRB(context.pagePadding, 0, context.pagePadding, 12),
+                child: _FilterDropdown(
+                  value: _filter,
+                  onChanged: (value) => setState(() => _filter = value),
+                ),
               ),
-            ),
-            Expanded(child: _buildBody()),
-          ],
+              Expanded(child: _buildBody()),
+            ],
+          ),
         ),
       ),
     );

@@ -193,124 +193,130 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
       },
       child: Scaffold(
         appBar: const PageAppBar(title: Text('Profilni tahrirlash'), showThemeToggle: false),
-        body: ListView(
-          padding: EdgeInsets.fromLTRB(padding, 0, padding, 32),
-          children: [
-            ContentConstraint(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _CompletionBar(
-                    percent: _form.completionPercent(
-                      hasAvatar: _localAvatar != null || _user.profileImage != null,
+        // A full-screen route has no bottom bar of its own, so without this
+        // the last action sits under the system navigation bar.
+        body: SafeArea(
+          top: false,
+          child: ListView(
+            padding: EdgeInsets.fromLTRB(padding, 0, padding, 32),
+            children: [
+              ContentConstraint(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _CompletionBar(
+                      percent: _form.completionPercent(
+                        hasAvatar: _localAvatar != null || _user.profileImage != null,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  _AvatarCard(
-                    user: _user,
-                    localAvatar: _localAvatar,
-                    uploading: _uploading,
-                    onPick: _uploading ? null : _pickAvatar,
-                  ),
-                  const SizedBox(height: 16),
-                  _Section(
-                    title: "Shaxsiy ma'lumotlar",
-                    children: [
-                      AppTextField(
-                        label: 'Ism',
-                        icon: Icons.person_outline_rounded,
-                        controller: _firstName,
-                        errorText: _fieldErrors['first_name'],
-                        textInputAction: TextInputAction.next,
-                        onChanged: (v) => setState(() => _form = _form.copyWith(firstName: v)),
-                      ),
-                      AppTextField(
-                        label: 'Familiya',
-                        icon: Icons.person_outline_rounded,
-                        controller: _lastName,
-                        errorText: _fieldErrors['last_name'],
-                        textInputAction: TextInputAction.next,
-                        onChanged: (v) => setState(() => _form = _form.copyWith(lastName: v)),
-                      ),
-                      AppTextField(
-                        label: 'Email',
-                        icon: Icons.mail_outline_rounded,
-                        controller: _email,
-                        errorText: _fieldErrors['email'],
-                        keyboardType: TextInputType.emailAddress,
-                        textInputAction: TextInputAction.next,
-                        onChanged: (v) => setState(() => _form = _form.copyWith(email: v)),
-                      ),
-                      AppTextField(
-                        label: 'Telefon',
-                        hint: '+998 XX XXX XX XX',
-                        icon: Icons.phone_outlined,
-                        controller: _phone,
-                        errorText: _fieldErrors['phone_number'],
-                        keyboardType: TextInputType.phone,
-                        textInputAction: TextInputAction.next,
-                        onChanged: (v) => setState(() => _form = _form.copyWith(phone: v)),
+                    const SizedBox(height: 16),
+                    _AvatarCard(
+                      user: _user,
+                      localAvatar: _localAvatar,
+                      uploading: _uploading,
+                      onPick: _uploading ? null : _pickAvatar,
+                    ),
+                    const SizedBox(height: 16),
+                    _Section(
+                      title: "Shaxsiy ma'lumotlar",
+                      children: [
+                        AppTextField(
+                          label: 'Ism',
+                          icon: Icons.person_outline_rounded,
+                          controller: _firstName,
+                          errorText: _fieldErrors['first_name'],
+                          textInputAction: TextInputAction.next,
+                          onChanged: (v) => setState(() => _form = _form.copyWith(firstName: v)),
+                        ),
+                        AppTextField(
+                          label: 'Familiya',
+                          icon: Icons.person_outline_rounded,
+                          controller: _lastName,
+                          errorText: _fieldErrors['last_name'],
+                          textInputAction: TextInputAction.next,
+                          onChanged: (v) => setState(() => _form = _form.copyWith(lastName: v)),
+                        ),
+                        AppTextField(
+                          label: 'Email',
+                          icon: Icons.mail_outline_rounded,
+                          controller: _email,
+                          errorText: _fieldErrors['email'],
+                          keyboardType: TextInputType.emailAddress,
+                          textInputAction: TextInputAction.next,
+                          onChanged: (v) => setState(() => _form = _form.copyWith(email: v)),
+                        ),
+                        AppTextField(
+                          label: 'Telefon',
+                          hint: '+998 XX XXX XX XX',
+                          icon: Icons.phone_outlined,
+                          controller: _phone,
+                          errorText: _fieldErrors['phone_number'],
+                          keyboardType: TextInputType.phone,
+                          textInputAction: TextInputAction.next,
+                          onChanged: (v) => setState(() => _form = _form.copyWith(phone: v)),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    _Section(
+                      title: "Ta'lim",
+                      children: [
+                        AppTextField(
+                          label: 'Maktab / Muassasa',
+                          icon: Icons.apartment_rounded,
+                          controller: _school,
+                          errorText: _fieldErrors['school_name'],
+                          textInputAction: TextInputAction.done,
+                          onChanged: (v) => setState(() => _form = _form.copyWith(school: v)),
+                        ),
+                        _LevelPicker(
+                          value: _form.educationLevel,
+                          onChanged: (v) =>
+                              setState(() => _form = _form.copyWith(educationLevel: v)),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    _SubjectsPicker(
+                      selected: _form.subjectIds,
+                      onToggle: (id) {
+                        final next = Set<int>.from(_form.subjectIds);
+                        next.contains(id) ? next.remove(id) : next.add(id);
+                        setState(() => _form = _form.copyWith(subjectIds: next));
+                      },
+                    ),
+                    if (_error != null) ...[
+                      const SizedBox(height: 14),
+                      Text(
+                        _error!,
+                        style: const TextStyle(fontSize: 13, color: AppColors.error),
                       ),
                     ],
-                  ),
-                  const SizedBox(height: 16),
-                  _Section(
-                    title: "Ta'lim",
-                    children: [
-                      AppTextField(
-                        label: 'Maktab / Muassasa',
-                        icon: Icons.apartment_rounded,
-                        controller: _school,
-                        errorText: _fieldErrors['school_name'],
-                        textInputAction: TextInputAction.done,
-                        onChanged: (v) => setState(() => _form = _form.copyWith(school: v)),
-                      ),
-                      _LevelPicker(
-                        value: _form.educationLevel,
-                        onChanged: (v) => setState(() => _form = _form.copyWith(educationLevel: v)),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  _SubjectsPicker(
-                    selected: _form.subjectIds,
-                    onToggle: (id) {
-                      final next = Set<int>.from(_form.subjectIds);
-                      next.contains(id) ? next.remove(id) : next.add(id);
-                      setState(() => _form = _form.copyWith(subjectIds: next));
-                    },
-                  ),
-                  if (_error != null) ...[
-                    const SizedBox(height: 14),
-                    Text(
-                      _error!,
-                      style: const TextStyle(fontSize: 13, color: AppColors.error),
+                    const SizedBox(height: 20),
+                    GradientButton(
+                      label: 'Saqlash',
+                      icon: Icons.check_rounded,
+                      loading: _saving,
+                      enabled: _dirty,
+                      onPressed: _save,
+                    ),
+                    const SizedBox(height: 10),
+                    TextButton(
+                      onPressed: _saving
+                          ? null
+                          : () async {
+                              if (await _confirmDiscard() && context.mounted) {
+                                _close();
+                              }
+                            },
+                      style: TextButton.styleFrom(foregroundColor: c.textSecondary),
+                      child: const Text('Bekor qilish'),
                     ),
                   ],
-                  const SizedBox(height: 20),
-                  GradientButton(
-                    label: 'Saqlash',
-                    icon: Icons.check_rounded,
-                    loading: _saving,
-                    enabled: _dirty,
-                    onPressed: _save,
-                  ),
-                  const SizedBox(height: 10),
-                  TextButton(
-                    onPressed: _saving
-                        ? null
-                        : () async {
-                            if (await _confirmDiscard() && context.mounted) {
-                              _close();
-                            }
-                          },
-                    style: TextButton.styleFrom(foregroundColor: c.textSecondary),
-                    child: const Text('Bekor qilish'),
-                  ),
-                ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

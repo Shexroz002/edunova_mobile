@@ -38,16 +38,21 @@ class ResultScreen extends ConsumerWidget {
     final ready = initial;
     return Scaffold(
       appBar: const PageAppBar(title: Text('Test natijasi'), showThemeToggle: false),
-      body: ready != null
-          ? _ResultBody(result: ready)
-          : ref.watch(reviewResultProvider(sessionId)).when(
-                loading: () => const LoadingView(),
-                error: (e, _) => ErrorView(
-                  message: ApiException.from(e).message,
-                  onRetry: () => ref.invalidate(reviewResultProvider(sessionId)),
+      // A full-screen route has no bottom bar of its own, so without this the
+      // last action sits under the system navigation bar and cannot be tapped.
+      body: SafeArea(
+        top: false,
+        child: ready != null
+            ? _ResultBody(result: ready)
+            : ref.watch(reviewResultProvider(sessionId)).when(
+                  loading: () => const LoadingView(),
+                  error: (e, _) => ErrorView(
+                    message: ApiException.from(e).message,
+                    onRetry: () => ref.invalidate(reviewResultProvider(sessionId)),
+                  ),
+                  data: (result) => _ResultBody(result: result),
                 ),
-                data: (result) => _ResultBody(result: result),
-              ),
+      ),
     );
   }
 }
