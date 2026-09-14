@@ -166,15 +166,13 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final c = context.colors;
     final unread = _visible.where((n) => !n.isRead).length;
 
     return Scaffold(
-      appBar: const PageAppBar(title: SizedBox.shrink()),
-      // A full-screen route has no rail to narrow it, so the column is centred
-      // and capped like every tab page.
-      // A full-screen route has no bottom bar of its own; without this the last
-      // notification sits under the system navigation bar.
+      appBar: const PageAppBar(title: Text('Bildirishnomalar')),
+      // A full-screen route has neither a rail to narrow it nor a bottom bar of
+      // its own, so the column is capped like a tab page and keeps clear of the
+      // system navigation bar.
       body: SafeArea(
         top: false,
         child: ContentConstraint(
@@ -182,31 +180,11 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Padding(
-                padding: EdgeInsets.fromLTRB(context.pagePadding, 0, context.pagePadding, 14),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        'Bildirishnomalar',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.w800,
-                          color: c.textPrimary,
-                        ),
-                      ),
-                    ),
-                    if (unread > 0)
-                      TextButton(
-                        onPressed: _markingAll ? null : _markAllRead,
-                        style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
-                        child: Text(
-                          _markingAll ? 'Kutilmoqda...' : "Barchasini o'qilgan qilish",
-                          textAlign: TextAlign.end,
-                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-                        ),
-                      ),
-                  ],
+                padding: EdgeInsets.fromLTRB(context.pagePadding, 14, context.pagePadding, 14),
+                child: _Header(
+                  unread: unread,
+                  busy: _markingAll,
+                  onMarkAll: _markAllRead,
                 ),
               ),
               Padding(
@@ -308,6 +286,92 @@ class _SectionLabel extends StatelessWidget {
 }
 
 /// Single-select filter, matching the web's dropdown above the list.
+/// Unread count and the mark-all action, under the app bar.
+///
+/// The title itself lives in the app bar, beside the theme toggle, so this row
+/// only carries the count and the button — which is why they fit one line on a
+/// phone where the title plus the button never did.
+class _Header extends StatelessWidget {
+  const _Header({required this.unread, required this.busy, required this.onMarkAll});
+
+  final int unread;
+  final bool busy;
+  final VoidCallback onMarkAll;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+
+    if (unread == 0) {
+      return Align(
+        alignment: Alignment.centerLeft,
+        child: Text(
+          "Hammasi o'qilgan",
+          style: TextStyle(fontSize: 13, color: c.textMuted),
+        ),
+      );
+    }
+
+    return Row(
+      children: [
+        Text(
+          '$unread ta yangi',
+          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: c.accent),
+        ),
+        const Spacer(),
+        _MarkAllButton(busy: busy, onTap: onMarkAll),
+      ],
+    );
+  }
+}
+
+/// Tinted pill, as the web styles this action.
+class _MarkAllButton extends StatelessWidget {
+  const _MarkAllButton({required this.busy, required this.onTap});
+
+  final bool busy;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+
+    return Material(
+      color: c.accentMuted,
+      borderRadius: BorderRadius.circular(12),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: busy ? null : onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: c.accentBorder),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (busy)
+                SizedBox(
+                  width: 14,
+                  height: 14,
+                  child: CircularProgressIndicator(strokeWidth: 2, color: c.accent),
+                )
+              else
+                Icon(Icons.done_all_rounded, size: 15, color: c.accent),
+              const SizedBox(width: 7),
+              Text(
+                busy ? 'Kutilmoqda...' : "Barchasini o'qilgan qilish",
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: c.accent),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _FilterDropdown extends StatelessWidget {
   const _FilterDropdown({required this.value, required this.onChanged});
 
