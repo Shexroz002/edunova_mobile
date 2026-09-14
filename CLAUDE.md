@@ -5,7 +5,10 @@ Read this file fully before doing any work in this repository.
 ## What we are building
 A Flutter app for the **STUDENT role** of EduNova, an education quiz platform. Platforms: Android and iOS. Form factors: phone and tablet.
 
-**Chat is out of scope.** Do not build a chat tab or chat screens. Do not call `/chats`, `/messages` or `/ws/chat`. Also skip the chat button on friends and the room chat inside the waiting room.
+**Chat is in scope** (owner decision, replaces the earlier exclusion). It is its own tab plus
+full-screen pages, and it uses `/chats`, `/messages` and `/ws/chat`. The chat button on a friend row
+opens a private chat. Still out of scope: the **room chat inside the waiting room** — the
+`chat_message` event on `/ws/quiz/sessions/{id}` is a separate, unpersisted feature.
 
 ## Sources of truth
 These projects are **read-only**. Never modify them.
@@ -75,12 +78,15 @@ lib/
   - the same icons in spirit.
 - **Texts:** Uzbek, copied from the web pages.
 - **Responsive:**
-  - under 600 dp: bottom `NavigationBar` with 5 tabs: *Bosh sahifa, Guruhlar, Do'stlar, Statistika, Profil*;
+  - under 600 dp: bottom `NavigationBar` with 6 tabs: *Bosh sahifa, Guruhlar, Do'stlar, Suhbatlar, Statistika, Profil*;
   - 600–1024 dp: `NavigationRail`, with two panes (list and detail) where it makes sense;
   - 1024 dp and wider: extended rail;
   - tables become cards on phones;
   - tap targets at least 44 dp.
 - **Every screen has:** loading, empty and error-with-retry states, plus pull-to-refresh on lists.
+- **Both themes, always.** Every screen reads its colours from `context.colors` (`AppColors`) and is
+  checked in dark *and* light; never hardcode a hex that is not a token or a brand/semantic constant.
+  Chat is no exception: bubbles, presence dots, reactions and sheets all resolve from the tokens.
 - **Do not port mock or fake UI** (analysis §4). Use the default decisions below.
 
 ## Default product decisions (ask the owner before changing any)
@@ -93,6 +99,27 @@ lib/
 4. **Waiting room**: no local-only "Ready" toggle, no "Kick", no room chat.
 5. **Hidden entirely**: password change (no endpoint) and Google/Telegram login.
 6. **Question editor for students** (edit text, images, correct option) is the last phase and designed tablet-first.
+
+## Chat
+- **Design:** the canvas at `docs/design/chat/` (dark and light, 7 screens each) is the reference.
+- **Transport split:** the chat list, history, upload and chat/member metadata come over HTTP;
+  everything live goes through `/ws/chat`. A message SENT over HTTP is not broadcast, so the app
+  always sends through the socket and uses HTTP only for reads and the file upload.
+- **Every `EventType` is used.** Outgoing: `message:new`, `message:forward`, `message:edited`,
+  `message:deleted`, `message:reaction_add`, `message:read`, `chat:created`, `typing:update`,
+  `chat:leaved`, `heartbeat:heartbeat`. Incoming: those plus `message:ack`, `presence:update`,
+  `connection:ready` and `error`.
+- **`message:ack` is how the sender learns the server id.** The socket suppresses the sender's own
+  echo per connection, so an optimistic bubble is reconciled from the ack (`client_message_id`),
+  never from a `message:new` coming back.
+- **Media stays in the app.** Voice is recorded with `record` and plays through one shared
+  `just_audio` player; a round `video_message` plays in place and a normal `video` opens the in-app
+  `video_player` page. Only documents are handed to the system viewer.
+- **Presence expires silently.** `presence:{user_id}` is published only on an explicit connect or
+  disconnect — the 60 s Redis key expiring emits nothing — so any presence snapshot must be
+  re-read, never trusted indefinitely.
+- **Membership is enforced server-side**: a non-member gets `403` on HTTP and an `error` frame on the
+  socket. Surface it, do not retry.
 
 ## Workflow rules
 - Work **phase by phase** (`docs/START_PROMPT.md`). After each phase:

@@ -1,4 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Chat voice messages are recorded in the app. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
     <application
         android:label="edunova_mobile"
         android:name="${applicationName}"

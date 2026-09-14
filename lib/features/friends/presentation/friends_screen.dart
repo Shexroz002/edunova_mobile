@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../core/network/api_exception.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/brand.dart';
 import '../../../core/widgets/gradient_button.dart';
@@ -9,6 +11,8 @@ import '../../../core/widgets/page_app_bar.dart';
 import '../../../core/widgets/responsive.dart';
 import '../../../core/widgets/search_field.dart';
 import '../../../core/widgets/state_views.dart';
+import '../../chat/data/chat_repository.dart';
+import '../../chat/presentation/chat_list_controller.dart';
 import '../data/friends_repository.dart';
 import '../domain/friend_models.dart';
 import 'widgets/add_friend_sheet.dart';
@@ -17,7 +21,7 @@ import 'widgets/add_friend_sheet.dart';
 ///
 /// The web's green "Hozir onlayn — N do'st" banner, the per-row online dot and
 /// "Faol emas" text are mock: no endpoint reports presence, so they are hidden
-/// (`CLAUDE.md` default decision 2). The row's chat button is out of scope.
+/// (`CLAUDE.md` default decision 2). The row's chat button opens a private chat.
 class FriendsScreen extends ConsumerStatefulWidget {
   const FriendsScreen({super.key});
 
@@ -169,15 +173,39 @@ class _AddButton extends StatelessWidget {
   }
 }
 
-/// One contact row: avatar, name, handle and a teacher badge when relevant.
-class _FriendTile extends StatelessWidget {
+/// One contact row: avatar, name, handle, a teacher badge and a chat button.
+class _FriendTile extends ConsumerStatefulWidget {
   const _FriendTile({required this.friend});
 
   final UserBrief friend;
 
   @override
+  ConsumerState<_FriendTile> createState() => _FriendTileState();
+}
+
+class _FriendTileState extends ConsumerState<_FriendTile> {
+  bool _opening = false;
+
+  /// Opens (or reuses) the private chat and pushes the room.
+  Future<void> _openChat() async {
+    setState(() => _opening = true);
+    try {
+      final chat = await ref.read(chatRepositoryProvider).openPrivateChat(widget.friend.id);
+      await ref.read(chatListProvider.notifier).ensureChat(chat.id);
+      if (!mounted) return;
+      context.push('/chats/${chat.id}');
+    } on ApiException catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.message)));
+    } finally {
+      if (mounted) setState(() => _opening = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final c = context.colors;
+    final friend = widget.friend;
     final isTeacher = friend.role?.toLowerCase().trim() == 'teacher';
 
     return Container(
@@ -217,6 +245,7 @@ class _FriendTile extends StatelessWidget {
           ),
           if (isTeacher)
             Container(
+              margin: const EdgeInsets.only(right: 4),
               padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
               decoration: BoxDecoration(
                 color: AppColors.tint(AppColors.warning),
@@ -231,6 +260,17 @@ class _FriendTile extends StatelessWidget {
                 ),
               ),
             ),
+          IconButton(
+            onPressed: _opening ? null : _openChat,
+            tooltip: 'Xabar yozish',
+            icon: _opening
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : Icon(Icons.chat_bubble_outline_rounded, size: 20, color: c.accent),
+          ),
         ],
       ),
     );

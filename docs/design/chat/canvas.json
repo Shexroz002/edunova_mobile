@@ -1,0 +1,170 @@
+{
+  "artboards": [
+    {
+      "file": "Main.dc.html",
+      "x": 0,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "Suhbatlar · Dark",
+      "page": "page-1"
+    },
+    {
+      "file": "RoomDark.dc.html",
+      "x": 470,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "Suhbat · Dark",
+      "page": "page-1"
+    },
+    {
+      "file": "MediaDark.dc.html",
+      "x": 940,
+      "y": 0,
+      "w": 390,
+      "h": 1080,
+      "title": "Biriktirmalar · Dark",
+      "page": "page-1"
+    },
+    {
+      "file": "ActionsDark.dc.html",
+      "x": 1410,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "Xabar amallari · Dark",
+      "page": "page-1"
+    },
+    {
+      "file": "PickerDark.dc.html",
+      "x": 0,
+      "y": 1200,
+      "w": 390,
+      "h": 844,
+      "title": "Uzatish · Dark",
+      "page": "page-1"
+    },
+    {
+      "file": "InfoDark.dc.html",
+      "x": 470,
+      "y": 1200,
+      "w": 390,
+      "h": 844,
+      "title": "Chat ma'lumoti · Dark",
+      "page": "page-1"
+    },
+    {
+      "file": "StatesDark.dc.html",
+      "x": 940,
+      "y": 1200,
+      "w": 390,
+      "h": 940,
+      "title": "Holatlar · Dark",
+      "page": "page-1"
+    },
+    {
+      "file": "ChatsLight.dc.html",
+      "x": 0,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "Suhbatlar · Light",
+      "page": "page-2"
+    },
+    {
+      "file": "RoomLight.dc.html",
+      "x": 470,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "Suhbat · Light",
+      "page": "page-2"
+    },
+    {
+      "file": "MediaLight.dc.html",
+      "x": 940,
+      "y": 0,
+      "w": 390,
+      "h": 1080,
+      "title": "Biriktirmalar · Light",
+      "page": "page-2"
+    },
+    {
+      "file": "ActionsLight.dc.html",
+      "x": 1410,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "Xabar amallari · Light",
+      "page": "page-2"
+    },
+    {
+      "file": "PickerLight.dc.html",
+      "x": 0,
+      "y": 1200,
+      "w": 390,
+      "h": 844,
+      "title": "Uzatish · Light",
+      "page": "page-2"
+    },
+    {
+      "file": "InfoLight.dc.html",
+      "x": 470,
+      "y": 1200,
+      "w": 390,
+      "h": 844,
+      "title": "Chat ma'lumoti · Light",
+      "page": "page-2"
+    },
+    {
+      "file": "StatesLight.dc.html",
+      "x": 940,
+      "y": 1200,
+      "w": 390,
+      "h": 940,
+      "title": "Holatlar · Light",
+      "page": "page-2"
+    }
+  ],
+  "annotations": [
+    {
+      "id": "events",
+      "x": 0,
+      "y": -190,
+      "w": 860,
+      "page": "page-1",
+      "text": "EduNova · chat\nRanglar lib/core/theme/app_colors.dart dan 1:1 olingan. Telefon ramkasi 390x844.\n\nSuhbat ekrani WS eventlarini ko'rsatadi: message:new, message:ack (soat -> bitta belgi), message:read (ikkita belgi), message:edited (tahrirlangan), message:deleted, message:reaction_add, message:forward, typing:update, presence:update (sarlavhadagi holat)."
+    },
+    {
+      "id": "media-note",
+      "x": 940,
+      "y": -190,
+      "w": 430,
+      "page": "page-1",
+      "text": "Biriktirma turlari bazadagi real qiymatlardan: image, video, voice, video_message, audio, pdf, file.\nRasmlar o'rniga belgilangan placeholder ishlatilgan."
+    },
+    {
+      "id": "light-note",
+      "x": 0,
+      "y": -130,
+      "w": 620,
+      "page": "page-2",
+      "text": "Light tema — bir xil tuzilma, faqat tokenlar almashgan (bgBase #F8FAFC, bgCard #FFFFFF, border #E2E8F0, accent #6366F1). Ikkala tema bitta manbadan generatsiya qilingan, shuning uchun tuzilishi aynan bir xil."
+    }
+  ],
+  "pages": [
+    {
+      "id": "page-1",
+      "name": "Dark"
+    },
+    {
+      "id": "page-2",
+      "name": "Light"
+    }
+  ],
+  "launch": {
+    "view": "canvas",
+    "page": "page-1"
+  }
+}

@@ -648,6 +648,84 @@ One bug found while testing: the segmented progress bar was drawn as nothing at 
 its children a **loose** cross-axis constraint, so an empty `ColoredBox` collapsed to zero height;
 it needs `CrossAxisAlignment.stretch`.
 
+## Chat (Suhbatlar)
+
+Chat was out of scope until the owner brought it in. It is now the **fourth tab**
+(*Bosh sahifa, Guruhlar, Do'stlar, Suhbatlar, Statistika, Profil*) with the room, its info page
+and the pickers as full-screen pages. `CLAUDE.md` records the scope change and the chat rules.
+
+**Design first.** Seven screens in dark and light, generated from one source so the two themes
+cannot drift: `docs/design/chat/` (published canvas linked in its README). Colours are lifted
+from `app_colors.dart`; nothing new was invented.
+
+**Transport split.** The list, history, chat/member metadata and the upload go over HTTP; every
+mutation goes over `/ws/chat`. That is not a style choice — a message written over HTTP is stored
+but never published to Redis, so the other member would not see it until a reload.
+
+**All of `EventType` is wired.** Out: `message:new`, `message:forward`, `message:edited`,
+`message:deleted`, `message:reaction_add`, `message:read`, `chat:created`, `typing:update`,
+`chat:leaved`, `heartbeat:heartbeat`. In: the same set plus `message:ack`, `presence:update`,
+`connection:ready` and `error`.
+
+Three payload quirks cost real time and are now pinned by `test/chat_socket_test.dart`:
+
+- a broadcast `message:new` is **not** a Mongo document — the text is `content` and the id is
+  `message_id`, so `Message.fromJson` cannot parse it;
+- `message:read` publishes **one** id under the plural key `message_ids`;
+- `typing:update` has no `chat_id` of its own, so the server fills it from the Redis channel name
+  and it arrives as a **string**.
+
+**Optimistic send.** The server suppresses the sender's own echo per connection, so a sent bubble
+is reconciled from `message:ack` via the `client_message_id` we generate — never from a
+`message:new` coming back. Failed sends keep the bubble and mark it.
+
+**Read receipts** come from the peer's `last_read_message_id`. Mongo ObjectIds begin with a
+timestamp, so their hex strings sort in creation order and a plain string compare decides which of
+our messages have been read. In a group the earliest cursor wins, so the second tick only appears
+once everyone has caught up.
+
+**Left out on purpose:** the design's media counters on the info page (128 rasm / 31 fayl /
+54 ovozli). No endpoint reports them and inventing numbers is worse than omitting the row.
+
+`url_launcher` was added for opening file attachments; images open in an in-app zoomable viewer.
+Audio and video are rendered but not played inline — that needs a player package and is the
+obvious next decision.
+
+
+### Chat media and presence, second pass
+
+Three things the owner found once it was on a real phone:
+
+- **The mic button was decoration.** It rendered from the design but was never wired, and it was
+  disabled whenever the field was empty — so it could not even be pressed. Recording now runs on
+  `record` (AAC/m4a = `audio/mp4`, the type the upload allow-list takes) with a red timer bar,
+  cancel and send. `RECORD_AUDIO` is in the manifest.
+- **Media opened in a browser.** `url_launcher` handled audio and video, which drops the session
+  and leaves the file unplayable. Audio now plays in the bubble through one shared `just_audio`
+  player, a normal video opens an in-app `video_player` page, and a **round video message plays in
+  place** with a playhead ring, Telegram-style. Only documents still leave the app.
+- **Camera clips are `video_message`.** The attach sheet gained Video (gallery) and Video xabar
+  (camera, round, capped at a minute); a clip from the gallery stays a rectangular `video`.
+
+**Presence was inconsistent between the list and the room**, and the cause was not the obvious one.
+`presence:{user_id}` is published *only* on an explicit connect or disconnect; when the 60 s Redis
+key expires on its own — a client that was killed or lost the network — **no event is emitted at
+all**. The room re-reads `GET /chats/{id}` every time it opens, so it was right; the list held its
+load-time snapshot forever, so it stayed green. It now applies `presence:update` where it knows the
+peer (learned from opened chats, since `GET /chats` does not return the peer's id), re-reads on a
+debounce after any presence event, and polls at the TTL cadence plus on app resume. Verified by
+setting and then silently deleting the Redis key: the dot went green, then grey on its own.
+
+Two smaller fixes found while testing on the device: one tap could stop a recording and immediately
+start another (the send button sits exactly where the mic reappears — both transitions await the
+platform recorder, so they are now guarded), and a message of ours loaded from history showed no
+tick at all until the peer read it, rather than the single "stored" tick it had earned.
+
+`record` also had to move from `^5.2.0` to `^6.1.1`: the old constraint resolved
+`record_linux 0.7.2` against `record_platform_interface 1.6.0`, which does not compile — and it
+broke the **Android** build, not just Linux.
+
+
 ## Next
 Tablet pass, part 2: test detali, guruh detali, sessiya natijasi, test ishlash, test yaratish and
 profil tahrirlash still need the same treatment.

@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/brand.dart';
 import '../../core/widgets/responsive.dart';
+import '../chat/presentation/chat_list_controller.dart';
 
 /// A bottom-nav / rail destination.
 class _Destination {
@@ -20,7 +22,7 @@ class _Destination {
 /// * Tablet (≥ 600 dp): [NavigationRail] on the left, extended on large screens.
 ///
 /// Each tab keeps its own navigation stack (go_router `StatefulShellRoute`).
-class StudentShell extends StatelessWidget {
+class StudentShell extends ConsumerWidget {
   const StudentShell({super.key, required this.navigationShell});
 
   final StatefulNavigationShell navigationShell;
@@ -30,6 +32,7 @@ class StudentShell extends StatelessWidget {
     _Destination('Bosh sahifa', Icons.space_dashboard_outlined, Icons.space_dashboard_rounded),
     _Destination('Guruhlar', Icons.school_outlined, Icons.school_rounded),
     _Destination("Do'stlar", Icons.people_outline_rounded, Icons.people_rounded),
+    _Destination('Suhbatlar', Icons.forum_outlined, Icons.forum_rounded),
     _Destination('Statistika', Icons.bar_chart_outlined, Icons.bar_chart_rounded),
     _Destination('Profil', Icons.person_outline_rounded, Icons.person_rounded),
   ];
@@ -40,11 +43,28 @@ class StudentShell extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
-    return context.isTablet ? _buildTablet(context) : _buildPhone(context);
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Unread chats badge the Suhbatlar tab from anywhere in the app.
+    final unread = ref.watch(chatUnreadTotalProvider);
+    return context.isTablet
+        ? _buildTablet(context, unread)
+        : _buildPhone(context, unread);
   }
 
-  Widget _buildPhone(BuildContext context) {
+  /// Wraps a destination icon in a count badge (Suhbatlar only).
+  Widget _icon(int index, IconData icon, int unread) {
+    if (index != _chatIndex || unread == 0) return Icon(icon);
+    return Badge(
+      label: Text(unread > 99 ? '99+' : '$unread'),
+      backgroundColor: AppColors.brand,
+      child: Icon(icon),
+    );
+  }
+
+  /// Index of the Suhbatlar tab in [_destinations].
+  static const _chatIndex = 3;
+
+  Widget _buildPhone(BuildContext context, int unread) {
     final c = context.colors;
     return Scaffold(
       body: navigationShell,
@@ -54,10 +74,10 @@ class StudentShell extends StatelessWidget {
           selectedIndex: navigationShell.currentIndex,
           onDestinationSelected: _onSelect,
           destinations: [
-            for (final d in _destinations)
+            for (final (index, d) in _destinations.indexed)
               NavigationDestination(
-                icon: Icon(d.icon),
-                selectedIcon: Icon(d.selectedIcon),
+                icon: _icon(index, d.icon, unread),
+                selectedIcon: _icon(index, d.selectedIcon, unread),
                 label: d.label,
               ),
           ],
@@ -66,7 +86,7 @@ class StudentShell extends StatelessWidget {
     );
   }
 
-  Widget _buildTablet(BuildContext context) {
+  Widget _buildTablet(BuildContext context, int unread) {
     final c = context.colors;
     final extended = context.isLargeScreen;
 
@@ -96,10 +116,10 @@ class StudentShell extends StatelessWidget {
                         child: extended ? const BrandTitle(size: 30) : const BrandMark(size: 36),
                       ),
                       destinations: [
-                        for (final d in _destinations)
+                        for (final (index, d) in _destinations.indexed)
                           NavigationRailDestination(
-                            icon: Icon(d.icon),
-                            selectedIcon: Icon(d.selectedIcon),
+                            icon: _icon(index, d.icon, unread),
+                            selectedIcon: _icon(index, d.selectedIcon, unread),
                             label: Text(d.label),
                           ),
                       ],

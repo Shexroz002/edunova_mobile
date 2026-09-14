@@ -5,6 +5,9 @@ import 'package:go_router/go_router.dart';
 import '../../features/auth/presentation/auth_controller.dart';
 import '../../features/auth/presentation/login_screen.dart';
 import '../../features/auth/presentation/register_screen.dart';
+import '../../features/chat/presentation/chat_info_screen.dart';
+import '../../features/chat/presentation/chat_room_screen.dart';
+import '../../features/chat/presentation/chats_screen.dart';
 import '../../features/common/splash_screen.dart';
 import '../../features/competition/presentation/competition_wizard_screen.dart';
 import '../../features/competition/presentation/lobby_screen.dart';
@@ -38,6 +41,7 @@ class Routes {
   static const home = '/home';
   static const groups = '/groups';
   static const friends = '/friends';
+  static const chats = '/chats';
   static const statistics = '/statistics';
   static const profile = '/profile';
   static const profileEdit = '/profile/edit';
@@ -93,6 +97,14 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(path: Routes.results, builder: (_, __) => const ResultsScreen()),
       GoRoute(path: Routes.notifications, builder: (_, __) => const NotificationsScreen()),
+      GoRoute(
+        path: '/chats/:chatId',
+        builder: (_, state) => ChatRoomScreen(chatId: _intParam(state, 'chatId')),
+      ),
+      GoRoute(
+        path: '/chats/:chatId/info',
+        builder: (_, state) => ChatInfoScreen(chatId: _intParam(state, 'chatId')),
+      ),
       GoRoute(path: Routes.profileEdit, builder: (_, __) => const ProfileEditScreen()),
       GoRoute(path: Routes.quizCreate, builder: (_, __) => const CreateQuizScreen()),
       GoRoute(
@@ -148,6 +160,9 @@ final routerProvider = Provider<GoRouter>((ref) {
           ]),
           StatefulShellBranch(routes: [
             GoRoute(path: Routes.friends, builder: (_, __) => const FriendsScreen()),
+          ]),
+          StatefulShellBranch(routes: [
+            GoRoute(path: Routes.chats, builder: (_, __) => const ChatsScreen()),
           ]),
           StatefulShellBranch(routes: [
             GoRoute(path: Routes.statistics, builder: (_, __) => const StatisticsScreen()),

@@ -38,6 +38,17 @@ dependencies:
   # Sharing (lobby join code)
   share_plus: ^10.1.2
 
+  # Opening chat document attachments in the system viewer. Audio and video
+  # play inside the app instead (record / just_audio / video_player).
+  url_launcher: ^6.3.1
+
+  # Chat voice messages: recording, then in-app playback
+  record: ^6.1.1
+  just_audio: ^0.9.42
+
+  # Chat video messages: in-app playback
+  video_player: ^2.9.2
+
   # PDF export of a group session result
   pdf: ^3.11.1
   printing: ^5.13.4
