@@ -1,0 +1,70 @@
+{
+  "artboards": [
+    {
+      "file": "Main.dc.html",
+      "x": 0,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "A: test tanlanmagan"
+    },
+    {
+      "file": "Ready.dc.html",
+      "x": 470,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "A: tayyor"
+    },
+    {
+      "file": "NoQuiz.dc.html",
+      "x": 940,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "A: testi yo‘q o‘quvchi"
+    },
+    {
+      "file": "MainLight.dc.html",
+      "x": 1410,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "A: light"
+    },
+    {
+      "file": "Tablet.dc.html",
+      "x": 0,
+      "y": 1000,
+      "w": 900,
+      "h": 720,
+      "title": "A: planshet"
+    }
+  ],
+  "annotations": [
+    {
+      "id": "problem",
+      "x": 1900,
+      "y": 0,
+      "w": 350,
+      "text": "HOZIR NIMA NOTO‘G‘RI\n\n1. Gradientli hero karta butun birinchi ekranni egallaydi (~400 px) va faqat reklama: “Real-vaqt / Reyting / Ko‘p o‘yinchi / Raqobat”. O‘quvchi “Musobaqa” ni allaqachon bosgan — uni ishontirish kerak emas.\n\n2. Uch qaror uchun sahifa ~1900 px. Tugmaga yetish uchun ikki marta scroll qilasiz.\n\n3. “Musobaqa xulosasi” kartasi qadam kartalaridagi o‘sha uch qiymatni qayta ko‘rsatadi. Hozir u uchta “—” va uchta “Belgilanmagan” dan iborat devor.\n\n4. “0/3 bajarildi” yolg‘on: ishtirokchilar va vaqt allaqachon 4 va 30 ga o‘rnatilgan.\n\n5. Yig‘ilgan 2- va 3-qadam qiymatini ko‘rsatmaydi — ochmasdan nima tanlanganini bilmaysiz.\n\n6. Sahifada header yo‘q — sarlavha va orqaga tugmasi scroll bilan ketib qoladi."
+    },
+    {
+      "id": "a",
+      "x": 1900,
+      "y": 760,
+      "w": 350,
+      "text": "YO‘NALISH A — “Bir ekran” (Main)\n\nAslida bu bitta qaror: qaysi test. Qolgan ikkitasi sozlama va ikkalasining ham qiymati bor.\n\n- Hero karta olib tashlanadi.\n- Test tanlash — bitta katta bosiladigan karta, sahifaning asosiy harakati.\n- Ikki sozlama bitta kartada, qiymati va presetlari ko‘rinib turadi. Akkordeon yo‘q.\n- Xulosa kartasi o‘rniga pastda mahkamlangan panel: bir qatorli xulosa + tugma. Tugmani izlab scroll qilish kerak emas.\n- Header joyida qoladi.\n\nNatija: hammasi bitta ekranda, scroll umuman kerak emas.\n\nKamchiligi: webdagi uch qadamli ko‘rinish yo‘qoladi."
+    },
+    {
+      "id": "noquiz",
+      "x": 1900,
+      "y": 1800,
+      "w": 350,
+      "text": "TESTI YO‘Q O‘QUVCHI\n\nBackend `quiz_list`ni `user_id` bo‘yicha filtrlaydi, ya'ni yangi ro‘yxatdan o‘tgan o‘quvchida nol test bo‘ladi. Hozir u testlar ro‘yxati bo‘sh sheetni ko‘radi va nima qilishni bilmaydi.\n\nEndi karta o‘zi aytadi va “Test yaratish” ga olib boradi."
+    }
+  ],
+  "launch": {
+    "view": "canvas"
+  }
+}

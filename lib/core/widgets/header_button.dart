@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
 
-/// 36×36 bordered square button used by the header actions.
+/// 44×44 bordered square button used by the header actions.
 ///
 /// Ported from the web's mobile header (`StudentLayout.tsx`): a `rounded-xl`
-/// tile with a 1 px border, rather than a bare icon.
+/// tile with a 1 px border, rather than a bare icon. The web draws it at 36 dp;
+/// both Material and iOS ask for 44 as the smallest comfortable target, and the
+/// icon inside stays the same size.
 class HeaderButton extends StatelessWidget {
   const HeaderButton({
     super.key,
@@ -37,8 +39,8 @@ class HeaderButton extends StatelessWidget {
     return Tooltip(
       message: tooltip,
       child: SizedBox(
-        width: 36,
-        height: 36,
+        width: 44,
+        height: 44,
         child: Material(
           color: background ?? c.bgInner,
           borderRadius: BorderRadius.circular(12),
@@ -60,7 +62,7 @@ class HeaderButton extends StatelessWidget {
                     child: Icon(icon, size: 17, color: iconColor ?? c.textSecondary),
                   ),
                 ),
-                if (badge != null) Positioned(top: 5, right: 5, child: badge!),
+                if (badge != null) Positioned(top: 8, right: 8, child: badge!),
               ],
             ),
           ),

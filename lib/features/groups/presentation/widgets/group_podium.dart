@@ -96,7 +96,7 @@ class _Place extends StatelessWidget {
                 child: Text(
                   '$place',
                   style: const TextStyle(
-                    fontSize: 11,
+                    fontSize: 12,
                     fontWeight: FontWeight.w800,
                     color: Colors.white,
                   ),

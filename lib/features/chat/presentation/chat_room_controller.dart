@@ -315,8 +315,13 @@ class ChatRoomController extends FamilyAsyncNotifier<ChatRoomState, int> {
       case MessageDeletedEvent(:final chatId, :final messageId) when chatId == _chatId:
         _replace(messageId, (m) => m.copyWith(deleted: true));
 
-      case MessageReactionEvent(:final chatId, :final messageId, :final emoji, :final added,
-            :final userId)
+      case MessageReactionEvent(
+            :final chatId,
+            :final messageId,
+            :final emoji,
+            :final added,
+            :final userId
+          )
           when chatId == _chatId:
         if (userId == _me) return; // already applied optimistically
         _applyReaction(messageId, emoji: emoji, userId: userId, added: added);
@@ -397,7 +402,8 @@ class ChatRoomController extends FamilyAsyncNotifier<ChatRoomState, int> {
     ref.read(chatListProvider.notifier).markRead(_chatId);
   }
 
-  void _applyReaction(String messageId, {
+  void _applyReaction(
+    String messageId, {
     required String emoji,
     required int userId,
     required bool added,

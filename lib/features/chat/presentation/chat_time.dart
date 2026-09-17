@@ -3,21 +3,40 @@
 library;
 
 const _shortMonths = [
-  'yan', 'fev', 'mar', 'apr', 'may', 'iyn',
-  'iyl', 'avg', 'sen', 'okt', 'noy', 'dek',
+  'yan',
+  'fev',
+  'mar',
+  'apr',
+  'may',
+  'iyn',
+  'iyl',
+  'avg',
+  'sen',
+  'okt',
+  'noy',
+  'dek',
 ];
 
 const _longMonths = [
-  'yanvar', 'fevral', 'mart', 'aprel', 'may', 'iyun',
-  'iyul', 'avgust', 'sentyabr', 'oktyabr', 'noyabr', 'dekabr',
+  'yanvar',
+  'fevral',
+  'mart',
+  'aprel',
+  'may',
+  'iyun',
+  'iyul',
+  'avgust',
+  'sentyabr',
+  'oktyabr',
+  'noyabr',
+  'dekabr',
 ];
 
 const _weekdays = ['Dush', 'Sesh', 'Chor', 'Pay', 'Jum', 'Shan', 'Yak'];
 
 String _two(int value) => value.toString().padLeft(2, '0');
 
-bool _sameDay(DateTime a, DateTime b) =>
-    a.year == b.year && a.month == b.month && a.day == b.day;
+bool _sameDay(DateTime a, DateTime b) => a.year == b.year && a.month == b.month && a.day == b.day;
 
 /// `14:32` — the clock shown inside a bubble.
 String formatMessageClock(DateTime date) {

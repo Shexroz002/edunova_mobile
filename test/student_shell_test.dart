@@ -30,7 +30,9 @@ void main() {
                 '/profile',
               ])
                 StatefulShellBranch(
-                  routes: [GoRoute(path: path, builder: (_, __) => Center(child: Text('page $path')))],
+                  routes: [
+                    GoRoute(path: path, builder: (_, __) => Center(child: Text('page $path')))
+                  ],
                 ),
             ],
           ),
@@ -58,16 +60,16 @@ void main() {
 
     expect(find.byType(NavigationBar), findsOneWidget);
     expect(find.byType(NavigationRail), findsNothing);
-    for (final label in [
-      'Bosh sahifa',
-      'Guruhlar',
-      "Do'stlar",
-      'Suhbatlar',
-      'Statistika',
-      'Profil',
-    ]) {
+
+    // Six destinations leave about 60 dp each, where "Bosh sahifa" wrapped onto
+    // a second line and collided with the label beside it. The phone bar uses a
+    // short label; the rail, which has room, keeps the full wording.
+    const labels = ['Asosiy', 'Guruhlar', "Do'stlar", 'Suhbatlar', 'Statistika', 'Profil'];
+    for (final label in labels) {
       expect(find.text(label), findsOneWidget);
     }
+    expect(find.text('Bosh sahifa'), findsNothing);
+
     expect(tester.takeException(), isNull, reason: 'six tabs must still fit the bar');
   });
 
@@ -89,7 +91,8 @@ void main() {
 
     expect(find.byType(NavigationRail), findsOneWidget);
     expect(find.byType(NavigationBar), findsNothing);
-    expect(tester.takeException(), isNull, reason: 'the rail must not overflow on a short viewport');
+    expect(tester.takeException(), isNull,
+        reason: 'the rail must not overflow on a short viewport');
   });
 
   testWidgets('a very short viewport keeps every destination reachable by scrolling',
@@ -116,6 +119,10 @@ void main() {
     final compact = tester.widget<NavigationRail>(find.byType(NavigationRail));
     expect(compact.extended, isFalse);
     expect(compact.labelType, NavigationRailLabelType.all);
+
+    // The rail has room for the full wording the phone bar shortens.
+    expect(find.text('Bosh sahifa'), findsOneWidget);
+    expect(find.text('Asosiy'), findsNothing);
 
     await pumpAt(tester, const Size(1200, 1000));
     final extended = tester.widget<NavigationRail>(find.byType(NavigationRail));

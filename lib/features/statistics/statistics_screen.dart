@@ -141,7 +141,7 @@ class _StatCard extends StatelessWidget {
               color: AppColors.tint(color),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(icon, size: 17, color: color),
+            child: Icon(icon, size: 17, color: context.readable(color)),
           ),
           const SizedBox(height: 10),
           Text(
@@ -155,7 +155,7 @@ class _StatCard extends StatelessWidget {
             label,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(fontSize: 11, color: c.textMuted),
+            style: TextStyle(fontSize: 12, color: c.textMuted),
           ),
         ],
       ),
@@ -266,7 +266,7 @@ class _ActivityBars extends StatelessWidget {
               interval: step,
               getTitlesWidget: (value, _) => Text(
                 '${value.toInt()}',
-                style: TextStyle(fontSize: 10, color: c.textMuted),
+                style: TextStyle(fontSize: 11, color: c.textMuted),
               ),
             ),
           ),
@@ -281,7 +281,7 @@ class _ActivityBars extends StatelessWidget {
                   padding: const EdgeInsets.only(top: 6),
                   child: Text(
                     days[index].label,
-                    style: TextStyle(fontSize: 11, color: c.textMuted),
+                    style: TextStyle(fontSize: 12, color: c.textMuted),
                   ),
                 );
               },
@@ -386,19 +386,19 @@ class _SubjectRow extends StatelessWidget {
             ),
             Text(
               '✓ ${formatPercent(stats.percent)}',
-              style: const TextStyle(
-                fontSize: 12,
+              style: TextStyle(
+                fontSize: 13,
                 fontWeight: FontWeight.w700,
-                color: AppColors.success,
+                color: context.readable(AppColors.success),
               ),
             ),
             const SizedBox(width: 10),
             Text(
               '✗ ${formatPercent(wrongPercent)}',
-              style: const TextStyle(
-                fontSize: 12,
+              style: TextStyle(
+                fontSize: 13,
                 fontWeight: FontWeight.w700,
-                color: AppColors.error,
+                color: context.readable(AppColors.error),
               ),
             ),
           ],
@@ -414,7 +414,14 @@ class _SubjectRow extends StatelessWidget {
               ),
               Expanded(
                 flex: ((1 - correctShare) * 1000).round().clamp(1, 1000),
-                child: Container(height: 7, color: AppColors.tint(AppColors.error, 0x66)),
+                // Hatching, not just a second colour: red and green are the one
+                // pair a colour-blind reader is most likely to miss, and this
+                // bar is otherwise a single unbroken line.
+                child: CustomPaint(
+                  size: const Size.fromHeight(7),
+                  painter: _HatchPainter(color: AppColors.tint(AppColors.error, 0x66)),
+                  child: const SizedBox(height: 7),
+                ),
               ),
             ],
           ),
@@ -427,6 +434,30 @@ class _SubjectRow extends StatelessWidget {
       ],
     );
   }
+}
+
+/// Diagonal hatching used for the wrong-answer share of a subject bar.
+class _HatchPainter extends CustomPainter {
+  const _HatchPainter({required this.color});
+
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.drawRect(Offset.zero & size, Paint()..color = color);
+
+    final stripe = Paint()
+      ..color = color.withValues(alpha: 1)
+      ..strokeWidth = 2;
+    const step = 6.0;
+    canvas.clipRect(Offset.zero & size);
+    for (var x = -size.height; x < size.width; x += step) {
+      canvas.drawLine(Offset(x, size.height), Offset(x + size.height, 0), stripe);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_HatchPainter oldDelegate) => oldDelegate.color != color;
 }
 
 /// Rule-based study advice with its three blocks.
@@ -501,7 +532,7 @@ class _RecommendationCard extends ConsumerWidget {
                       child: Text(
                         data.badge!,
                         style: TextStyle(
-                          fontSize: 11,
+                          fontSize: 12,
                           fontWeight: FontWeight.w700,
                           color: c.accent,
                         ),

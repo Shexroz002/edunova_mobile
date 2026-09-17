@@ -33,8 +33,7 @@ class ChatsScreen extends ConsumerStatefulWidget {
 /// re-reads on open; the list polls at the same cadence as the TTL.
 const _presencePoll = Duration(seconds: 60);
 
-class _ChatsScreenState extends ConsumerState<ChatsScreen>
-    with WidgetsBindingObserver {
+class _ChatsScreenState extends ConsumerState<ChatsScreen> with WidgetsBindingObserver {
   String _query = '';
   Timer? _poll;
 

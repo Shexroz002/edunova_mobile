@@ -16,11 +16,11 @@ final chatSocketProvider = Provider<ChatSocket?>((ref) {
   if (userId == null) return null;
 
   final socket = ref.watch(socketFactoryProvider).create(
-        '/ws/chat',
-        // Presence expires after 60 s server-side; the default 25 s beat keeps
-        // us online without a margin this tight mattering.
-        heartbeat: const {'type': ChatEventType.heartbeat},
-      );
+    '/ws/chat',
+    // Presence expires after 60 s server-side; the default 25 s beat keeps
+    // us online without a margin this tight mattering.
+    heartbeat: const {'type': ChatEventType.heartbeat},
+  );
   final chatSocket = ChatSocket(socket)..start();
   ref.onDispose(chatSocket.dispose);
   return chatSocket;

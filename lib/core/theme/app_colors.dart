@@ -65,8 +65,10 @@ class AppColors extends ThemeExtension<AppColors> {
     bgInner: Color(0xFF0F172A),
     border: Color(0xFF334155),
     textPrimary: Color(0xFFF8FAFC),
-    textSecondary: Color(0xFF94A3B8),
-    textMuted: Color(0xFF64748B),
+    // #94A3B8 as the muted tone only reached 3.07:1 on a dark card; both text
+    // greys move one step lighter so captions stay readable.
+    textSecondary: Color(0xFFCBD5E1),
+    textMuted: Color(0xFF94A3B8),
     accent: brandLight,
     accentMuted: Color(0x1A6366F1), // rgba(99,102,241,0.10)
     accentBorder: Color(0x336366F1), // rgba(99,102,241,0.20)
@@ -79,8 +81,11 @@ class AppColors extends ThemeExtension<AppColors> {
     bgInner: Color(0xFFF1F5F9),
     border: Color(0xFFE2E8F0),
     textPrimary: Color(0xFF0F172A),
-    textSecondary: Color(0xFF64748B),
-    textMuted: Color(0xFF94A3B8),
+    // The old muted grey (#94A3B8) was 2.56:1 on a white card — far short of
+    // the 4.5:1 that body text needs — and it carried most of the captions in
+    // the app. Both greys move one step darker.
+    textSecondary: Color(0xFF475569),
+    textMuted: Color(0xFF64748B),
     accent: brand,
     accentMuted: Color(0x146366F1), // rgba(99,102,241,0.08)
     accentBorder: Color(0x336366F1),
@@ -89,6 +94,36 @@ class AppColors extends ThemeExtension<AppColors> {
       BoxShadow(color: Color(0x0A0F172A), blurRadius: 12, offset: Offset(0, 4)),
     ],
   );
+
+  /// Text-safe variants of the semantic colours.
+  ///
+  /// The bright tokens above are tuned for fills, gradients and progress bars,
+  /// where contrast rules do not apply. As **text** on a light surface they
+  /// fail badly — `emerald` reaches only 1.92:1 — so every label and link uses
+  /// the darker twin instead. Dark mode already has room, and keeps the bright
+  /// tone except for `error`.
+  static Color? _lightTwin(Color c) => switch (c.toARGB32()) {
+        0xFF22C55E => const Color(0xFF15803D), // success
+        0xFF34D399 => const Color(0xFF047857), // emerald
+        0xFFF59E0B => const Color(0xFFB45309), // warning
+        0xFFEF4444 => const Color(0xFFDC2626), // error
+        0xFF38BDF8 => const Color(0xFF0369A1), // sky
+        0xFF3B82F6 => const Color(0xFF1D4ED8), // blue
+        0xFF6366F1 || 0xFF818CF8 => const Color(0xFF4F46E5), // brand
+        0xFF8B5CF6 || 0xFF7C3AED => const Color(0xFF6D28D9), // violet
+        0xFFFBBF24 => const Color(0xFFB45309), // amber accents
+        _ => null,
+      };
+
+  static Color? _darkTwin(Color c) => switch (c.toARGB32()) {
+        0xFFEF4444 => const Color(0xFFF87171),
+        0xFF6366F1 => brandLight,
+        _ => null,
+      };
+
+  /// The variant of [color] that is safe to render as text in this theme.
+  static Color readable(Color color, {required bool dark}) =>
+      (dark ? _darkTwin(color) : _lightTwin(color)) ?? color;
 
   /// Soft translucent background for a colored icon/badge (≈12% alpha).
   static Color tint(Color color, [int alpha = 0x1F]) => color.withAlpha(alpha);
@@ -146,6 +181,9 @@ class AppColors extends ThemeExtension<AppColors> {
 extension AppColorsX on BuildContext {
   /// Current EduNova color tokens.
   AppColors get colors => Theme.of(this).extension<AppColors>() ?? AppColors.dark;
+
+  /// [color] adjusted so it is readable as text in the current theme.
+  Color readable(Color color) => AppColors.readable(color, dark: isDark);
 
   bool get isDark => Theme.of(this).brightness == Brightness.dark;
 }

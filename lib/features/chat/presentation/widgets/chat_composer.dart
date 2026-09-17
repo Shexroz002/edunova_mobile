@@ -287,8 +287,7 @@ class _ChatComposerState extends State<ChatComposer> {
                 'Video',
                 () => _pickVideo(ImageSource.gallery, kind: AttachmentKind.video)
               ),
-              (Icons.photo_camera_outlined, 'Suratga olish',
-                  () => _pickImage(ImageSource.camera)),
+              (Icons.photo_camera_outlined, 'Suratga olish', () => _pickImage(ImageSource.camera)),
               (
                 Icons.motion_photos_on_outlined,
                 'Video xabar',

@@ -25,8 +25,20 @@ class Pill extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (icon != null) ...[Icon(icon, size: 12, color: color), const SizedBox(width: 4)],
-          Text(label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: color)),
+          // The fill stays bright; the label takes the readable twin, which on
+          // a light surface is several steps darker.
+          if (icon != null) ...[
+            Icon(icon, size: 12, color: context.readable(color)),
+            const SizedBox(width: 4),
+          ],
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: context.readable(color),
+            ),
+          ),
         ],
       ),
     );
@@ -76,7 +88,7 @@ class SubjectIconTile extends StatelessWidget {
         color: AppColors.tint(style.color),
         borderRadius: BorderRadius.circular(size * 0.3),
       ),
-      child: Icon(style.icon, color: style.color, size: size * 0.5),
+      child: Icon(style.icon, color: context.readable(style.color), size: size * 0.5),
     );
   }
 }
@@ -102,7 +114,11 @@ class GradeBadge extends StatelessWidget {
       ),
       child: Text(
         grade.letter,
-        style: TextStyle(fontSize: size * 0.4, fontWeight: FontWeight.w800, color: grade.color),
+        style: TextStyle(
+          fontSize: size * 0.4,
+          fontWeight: FontWeight.w800,
+          color: context.readable(grade.color),
+        ),
       ),
     );
   }

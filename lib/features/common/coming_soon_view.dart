@@ -54,7 +54,7 @@ class ComingSoonView extends StatelessWidget {
                   child: Text(
                     '$stage-bosqichda',
                     style: const TextStyle(
-                        fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.warning),
+                        fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.warning),
                   ),
                 ),
               ],

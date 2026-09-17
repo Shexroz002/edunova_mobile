@@ -31,8 +31,7 @@ class AttachmentView extends StatelessWidget {
     return switch (attachment.kind) {
       AttachmentKind.image => _Thumbnail(attachment: attachment, width: _frameWidth),
       AttachmentKind.videoMessage => _RoundVideo(attachment: attachment),
-      AttachmentKind.video =>
-        _Thumbnail(attachment: attachment, width: _frameWidth, play: true),
+      AttachmentKind.video => _Thumbnail(attachment: attachment, width: _frameWidth, play: true),
       AttachmentKind.voice || AttachmentKind.audio => _AudioRow(
           attachment: attachment,
           outgoing: outgoing,
@@ -324,9 +323,7 @@ class _AudioRow extends ConsumerWidget {
                       child: CircularProgressIndicator(strokeWidth: 2, color: foreground),
                     )
                   : Icon(
-                      active && playback.playing
-                          ? Icons.pause_rounded
-                          : Icons.play_arrow_rounded,
+                      active && playback.playing ? Icons.pause_rounded : Icons.play_arrow_rounded,
                       size: 20,
                       color: foreground,
                     ),
@@ -443,9 +440,7 @@ class _WaveformPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_WaveformPainter oldDelegate) =>
-      oldDelegate.seed != seed ||
-      oldDelegate.color != color ||
-      oldDelegate.progress != progress;
+      oldDelegate.seed != seed || oldDelegate.color != color || oldDelegate.progress != progress;
 }
 
 /// Document / archive row; the one kind that still opens outside the app.

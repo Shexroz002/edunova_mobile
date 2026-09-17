@@ -211,7 +211,7 @@ class _HeaderStat extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 11, color: Color(0xFFE0E7FF)),
+            style: const TextStyle(fontSize: 12, color: Color(0xFFE0E7FF)),
           ),
         ],
       ),

@@ -79,3 +79,9 @@ Each entry lists what happens, what should happen, and the client workaround.
 | 48 | `GET /api/v1/student/quizzes/{id}/` | Questions come back in **update order**, not by id: editing question 3 of 5 moved it to the end of the list, which would renumber the whole quiz in the UI. | A stable order | `QuizDetail.fromJson` sorts by id |
 | 49 | Web client (FYI) | The create-quiz modal advertises "Maksimal: 10 MB" while `settings.MAX_PDF_SIZE` is **5 MB**; a 6 MB PDF is accepted by the form and then fails with "Fayl saqlanmadi". | One limit | the app states 5 MB and refuses a bigger file before uploading |
 | 50 | Question editing | There is **no endpoint** to change an option's text, to add or remove options, or to add or delete a question. Only `question/{id}/edit` (text, topic, difficulty, table), `update-correct-option` and the two image routes exist. | Full editing, if students are meant to author quizzes | the editor exposes exactly what the API supports and says so: "Javob variantlarining matnini o'zgartirib bo'lmaydi" |
+
+## Added 2026-09-15 (waiting-room design pass)
+
+| # | Endpoint | Problem | Expected | Client workaround |
+|---|---|---|---|---|
+| 51 | `GET /api/v1/student/quiz/multiplayer/{id}/info/` | `max_participants` is stored on the session (`QuizSession.max_participants`, set by `create`) but the response schema `QuizSessionTeacherResponse` does not include it, so the lobby cannot show how many people the room is waiting for. The host chose the number one screen earlier and then cannot see it; a joiner never learns it at all. | `max_participants` in the info response | the waiting room shows the present count only — no "3 / 4" and no empty slots — and the design is drawn that way on purpose |

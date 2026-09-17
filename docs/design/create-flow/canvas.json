@@ -1,0 +1,34 @@
+{
+  "artboards": [
+    { "file": "Main.dc.html",        "x": 0,    "y": 0,    "w": 390, "h": 844, "title": "1-qadam: usul — dark" },
+    { "file": "PdfEmpty.dc.html",    "x": 470,  "y": 0,    "w": 390, "h": 844, "title": "2-qadam: PDF — bo‘sh" },
+    { "file": "PdfChosen.dc.html",   "x": 940,  "y": 0,    "w": 390, "h": 844, "title": "2-qadam: PDF — tanlandi" },
+    { "file": "PdfTooBig.dc.html",   "x": 1410, "y": 0,    "w": 390, "h": 844, "title": "2-qadam: PDF — juda katta" },
+    { "file": "MainLight.dc.html",   "x": 0,    "y": 1000, "w": 390, "h": 844, "title": "1-qadam: usul — light" },
+    { "file": "AiFormLight.dc.html", "x": 470,  "y": 1000, "w": 390, "h": 844, "title": "2-qadam: AI — light" },
+    { "file": "Tablet.dc.html",      "x": 0,    "y": 2000, "w": 900, "h": 720, "title": "1-qadam: planshet" }
+  ],
+  "annotations": [
+    {
+      "id": "rail",
+      "x": 1900, "y": 0, "w": 340,
+      "text": "1. QADAMLAR KO'RINADI\n\nHozir oqim uch qadamdan iborat, lekin buni hech narsa ko'rsatmaydi — faqat kichkina kulrang qator: \"Test yaratish usulini tanlang\" / \"AI yordamida\" / \"Jarayon tugashini kuting\".\n\nO'sha qator o'rniga header ostida 3 ta qadamli rels: Usul → Ma'lumot → Tayyorlash. O'tilgan qadam yashil ✓, joriysi binafsha raqam, qolgani kulrang.\n\n3-qadam allaqachon qilingan jarayon ekrani — rels u yerda ham turadi."
+    },
+    {
+      "id": "choice",
+      "x": 1900, "y": 380, "w": 340,
+      "text": "2. TANLASHGA YORDAM BERADI\n\nHozir ikkala karta bir xil vaznda va \"Avtomatik\" / \"Intellektual\" deb yozilgan — bular hech narsa aytmaydi.\n\nEndi har kartaning tagida u KIMGA mo'ljallangani turadi: \"Darslik yoki konspekt bo'lsa\" / \"Faqat mavzu bo'lsa\". Ostida esa haqiqiy faktlar: hajm chegarasi, savollar soni kimda, qancha vaqt oladi.\n\nSarlavha savol bo'lib qo'yildi: \"Test qanday yaratilsin?\""
+    },
+    {
+      "id": "pdf",
+      "x": 1900, "y": 760, "w": 340,
+      "text": "3. PDF SHARTLARI OLDINDAN\n\nHozir \"Maksimal: 5 MB\" mayda yozuv, matnli PDF kerakligi esa umuman aytilmaydi — buni faqat 2 daqiqadan keyin, xatolik ekranida bilib olasiz.\n\nEndi ikkala shart tanlashdan oldin drop zonada turadi.\n\nFayl katta bo'lsa: chegara qizil, hajm qizil, tagida nima qilish kerakligi. \"Test yaratish\" o'chiq turadi va tagida nima yetishmayotgani yozilgan."
+    },
+    {
+      "id": "open",
+      "x": 940, "y": 1000, "w": 340,
+      "text": "OCHIQ SAVOLLAR\n\n1. Qadamlar relsi kerakmi? U 34 px joy oladi. Yoqmasa — olib tashlaymiz, qolgani o'z-o'zicha ishlaydi.\n\n2. Kartadagi faktlar ro'yxati (3 qator) — shu holida qoldiramizmi yoki 2 qatorga qisqartiramizmi?\n\n3. Planshetda ikki karta yonma-yon (webda ham shunday). Forma qadamida ham shunday kengaytiraymi yoki bir ustunda qolsinmi?"
+    }
+  ],
+  "launch": { "view": "canvas" }
+}

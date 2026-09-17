@@ -146,11 +146,15 @@ class _MetaChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 13, color: color),
+          Icon(icon, size: 13, color: context.readable(color)),
           const SizedBox(width: 6),
           Text(
             label,
-            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: color),
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: context.readable(color),
+            ),
           ),
         ],
       ),
@@ -197,7 +201,11 @@ class _MyScore extends StatelessWidget {
                     const Spacer(),
                     Text(
                       formatPercent(entry.percent),
-                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: color),
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w800,
+                        color: context.readable(color),
+                      ),
                     ),
                   ],
                 ),
@@ -263,7 +271,7 @@ class _ScoreCount extends StatelessWidget {
             if (total != null)
               Text(
                 ' /$total',
-                style: TextStyle(fontSize: 11, color: c.textMuted),
+                style: TextStyle(fontSize: 12, color: c.textMuted),
               ),
           ],
         ),
@@ -345,7 +353,7 @@ class LeaderboardRow extends StatelessWidget {
                         child: Text(
                           'Siz',
                           style: TextStyle(
-                            fontSize: 9,
+                            fontSize: 10,
                             fontWeight: FontWeight.w700,
                             color: c.accent,
                           ),
@@ -360,7 +368,7 @@ class LeaderboardRow extends StatelessWidget {
                 else
                   Text(
                     'Yakunlamagan',
-                    style: TextStyle(fontSize: 11, color: c.textMuted),
+                    style: TextStyle(fontSize: 12, color: c.textMuted),
                   ),
               ],
             ),

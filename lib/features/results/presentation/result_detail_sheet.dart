@@ -194,12 +194,21 @@ class _Tally extends StatelessWidget {
         children: [
           Text(
             '$value',
-            style: TextStyle(fontSize: 20, height: 1, fontWeight: FontWeight.w800, color: color),
+            style: TextStyle(
+              fontSize: 20,
+              height: 1,
+              fontWeight: FontWeight.w800,
+              color: context.readable(color),
+            ),
           ),
           const SizedBox(height: 5),
           Text(
             label,
-            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: color),
+            style: TextStyle(
+              fontSize: 12.5,
+              fontWeight: FontWeight.w600,
+              color: context.readable(color),
+            ),
           ),
         ],
       ),
@@ -296,7 +305,7 @@ class _LegendDot extends StatelessWidget {
           decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
         const SizedBox(width: 6),
-        Text(label, style: TextStyle(fontSize: 11, color: context.colors.textMuted)),
+        Text(label, style: TextStyle(fontSize: 12, color: context.colors.textMuted)),
       ],
     );
   }

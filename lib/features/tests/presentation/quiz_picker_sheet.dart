@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../core/network/api_exception.dart';
-import '../../../../core/theme/app_colors.dart';
-import '../../../../core/widgets/search_field.dart';
-import '../../../../core/widgets/state_views.dart';
-import '../../../tests/data/tests_repository.dart';
-import '../../../tests/domain/quiz.dart';
+import '../../../core/network/api_exception.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/search_field.dart';
+import '../../../core/widgets/state_views.dart';
+import '../data/tests_repository.dart';
+import '../domain/quiz.dart';
 
 /// Picks a quiz for a competition.
 ///

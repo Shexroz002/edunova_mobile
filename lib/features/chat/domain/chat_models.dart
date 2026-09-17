@@ -84,9 +84,8 @@ class ChatListItem {
       avatar: asString(json['avatar']),
       isOnline: json['is_online'] is bool ? json['is_online'] as bool : null,
       lastSeen: parseUtcDate(json['last_seen']),
-      lastMessage: last is Map
-          ? LastMessagePreview.fromJson(Map<String, dynamic>.from(last))
-          : null,
+      lastMessage:
+          last is Map ? LastMessagePreview.fromJson(Map<String, dynamic>.from(last)) : null,
       unreadCount: asInt(json['unread_count']) ?? 0,
       updatedAt: parseUtcDate(json['updated_at']),
     );

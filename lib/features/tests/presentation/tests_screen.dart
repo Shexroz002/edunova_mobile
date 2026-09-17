@@ -12,6 +12,7 @@ import '../../../core/widgets/state_views.dart';
 import '../data/tests_repository.dart';
 import '../domain/quiz.dart';
 import 'quiz_card.dart';
+import 'system_quiz_notice.dart';
 import 'start_test_sheet.dart';
 
 /// The student's quizzes with search and infinite scroll.
@@ -35,13 +36,7 @@ class _TestsScreenState extends ConsumerState<TestsScreen> {
   int _subjectCount = 0;
 
   Future<void> _start(QuizSummary quiz) async {
-    final sessionId = await showStartTestSheet(
-      context,
-      quizId: quiz.id,
-      title: quiz.title,
-      questionCount: quiz.questionCount,
-      suggestedMinutes: quiz.suggestedMinutes,
-    );
+    final sessionId = await showStartTestSheet(context, quiz: quiz);
     if (sessionId != null && mounted) context.push('/session/$sessionId/play');
   }
 
@@ -127,7 +122,15 @@ class _TestsScreenState extends ConsumerState<TestsScreen> {
             ),
             itemBuilder: (context, quiz) => QuizCard(
               quiz: quiz,
-              onOpen: () => context.push('/tests/${quiz.id}'),
+              // A system quiz has no detail to open: the page would list its
+              // questions, which is the answer sheet for a test not yet taken.
+              onOpen: () => quiz.canEdit
+                  ? context.push('/tests/${quiz.id}')
+                  : showSystemQuizNotice(
+                      context,
+                      canStart: quiz.questionCount > 0,
+                      onStart: () => _start(quiz),
+                    ),
               onStart: () => _start(quiz),
               onCompete: () => context.push('/competition/new?quizId=${quiz.id}'),
             ),

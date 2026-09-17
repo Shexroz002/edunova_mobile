@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/network/api_exception.dart';
+import '../../../core/router/app_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/page_app_bar.dart';
@@ -143,11 +144,14 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
     }
   }
 
+  /// "Ko'rish" on a competition result opens Natijalar and lets that page show
+  /// the session's leaderboard, so the student lands where the result lives
+  /// instead of getting a sheet stacked over the notification list.
   Future<void> _open(AppNotification notification) async {
     final sessionId = notification.resultSessionId;
     if (sessionId == null) return;
     await _markRead(notification);
-    if (mounted) context.push('/results?sessionId=$sessionId');
+    if (mounted) context.push('${Routes.results}?sessionId=$sessionId');
   }
 
   void _decline(AppNotification notification) {
@@ -276,7 +280,7 @@ class _SectionLabel extends StatelessWidget {
         child: Text(
           text,
           style: TextStyle(
-            fontSize: 11,
+            fontSize: 12,
             fontWeight: FontWeight.w700,
             letterSpacing: 1.2,
             color: context.colors.textMuted,

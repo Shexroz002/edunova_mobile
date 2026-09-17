@@ -10,6 +10,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/app_text_field.dart';
 import '../../../core/widgets/gradient_button.dart';
+import '../../../core/widgets/hint_pill.dart';
 import '../../../core/widgets/page_app_bar.dart';
 import '../../../core/widgets/responsive.dart';
 import '../../auth/data/auth_repository.dart';
@@ -19,6 +20,8 @@ import '../domain/quiz_job.dart';
 import 'job_progress_view.dart';
 import 'widgets/method_card.dart';
 import 'widgets/pdf_picker.dart';
+import 'widgets/source_card.dart';
+import 'widgets/step_rail.dart';
 
 /// Quiz creation, following the web's `CreateQuizModal`.
 ///
@@ -34,6 +37,9 @@ class CreateQuizScreen extends ConsumerStatefulWidget {
 class _CreateQuizScreenState extends ConsumerState<CreateQuizScreen> {
   CreateMethod? _method;
   File? _pdf;
+
+  /// Size of [_pdf], read once at pick time.
+  int? _pdfSize;
   int? _subjectId;
   int _questions = CreateLimits.defaultQuestions;
   final _description = TextEditingController();
@@ -51,7 +57,7 @@ class _CreateQuizScreenState extends ConsumerState<CreateQuizScreen> {
   }
 
   bool get _canSubmit => _method == CreateMethod.pdf
-      ? _pdf != null
+      ? _pdf != null && (_pdfSize ?? 0) <= CreateLimits.maxPdfBytes
       : _subjectId != null && _description.text.trim().isNotEmpty;
 
   Future<void> _pickPdf() async {
@@ -59,10 +65,11 @@ class _CreateQuizScreenState extends ConsumerState<CreateQuizScreen> {
       type: FileType.custom,
       allowedExtensions: const ['pdf'],
     );
-    final path = result?.files.single.path;
-    if (path == null || !mounted) return;
+    final picked = result?.files.single;
+    if (picked?.path == null || !mounted) return;
     setState(() {
-      _pdf = File(path);
+      _pdf = File(picked!.path!);
+      _pdfSize = picked.size;
       _error = null;
     });
   }
@@ -90,6 +97,25 @@ class _CreateQuizScreenState extends ConsumerState<CreateQuizScreen> {
     }
   }
 
+  /// What the progress screen shows the job was started from.
+  JobSource get _source {
+    if (_method == CreateMethod.pdf) {
+      final file = _pdf;
+      return JobSource(
+        icon: Icons.picture_as_pdf_rounded,
+        title: file == null ? 'PDF fayl' : file.uri.pathSegments.last,
+        meta: _pdfSize == null ? 'PDF fayldan' : '${PdfPicker.formatSize(_pdfSize!)} · PDF fayldan',
+      );
+    }
+    final subject =
+        ref.read(subjectsProvider).valueOrNull?.where((s) => s.id == _subjectId).firstOrNull;
+    return JobSource(
+      icon: Icons.auto_awesome_rounded,
+      title: subject?.displayName ?? 'AI test',
+      meta: '$_questions ta savol · AI yordamida',
+    );
+  }
+
   void _back() {
     if (_job != null) {
       setState(() => _job = null);
@@ -105,11 +131,11 @@ class _CreateQuizScreenState extends ConsumerState<CreateQuizScreen> {
     final c = context.colors;
     final job = _job;
 
-    final subtitle = switch (_method) {
-      null => 'PDF yoki AI yordamida',
-      CreateMethod.pdf => 'PDF fayldan',
-      CreateMethod.ai => 'AI yordamida',
-    };
+    final step = job != null
+        ? CreateStep.job
+        : _method == null
+            ? CreateStep.method
+            : CreateStep.form;
 
     return PopScope(
       canPop: _method == null && _job == null,
@@ -130,51 +156,64 @@ class _CreateQuizScreenState extends ConsumerState<CreateQuizScreen> {
         // the last action sits under the system navigation bar.
         body: SafeArea(
           top: false,
-          child: ListView(
-            padding: EdgeInsets.fromLTRB(context.pagePadding, 0, context.pagePadding, 32),
+          child: Column(
             children: [
-              ContentConstraint(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
+              Padding(
+                padding: EdgeInsets.fromLTRB(context.pagePadding, 14, context.pagePadding, 4),
+                child: ContentConstraint(child: StepRail(current: step)),
+              ),
+              Expanded(
+                child: ListView(
+                  padding: EdgeInsets.fromLTRB(context.pagePadding, 14, context.pagePadding, 32),
                   children: [
-                    Text(
-                      job != null
-                          ? 'Jarayon tugashini kuting'
-                          : _method == null
-                              ? 'Test yaratish usulini tanlang'
-                              : subtitle,
-                      style: TextStyle(fontSize: 13, color: c.textMuted),
-                    ),
-                    const SizedBox(height: 16),
-                    if (job != null)
-                      JobProgressView(
-                        started: job,
-                        method: _method!,
-                        onDone: (quizId) {
-                          context.pop();
-                          context.push('/tests/$quizId');
-                        },
-                        onRetry: () => setState(() => _job = null),
-                      )
-                    else if (_method == null)
-                      _MethodStep(onPick: (m) => setState(() => _method = m))
-                    else
-                      _FormStep(
-                        method: _method!,
-                        pdf: _pdf,
-                        onPickPdf: _pickPdf,
-                        onClearPdf: () => setState(() => _pdf = null),
-                        subjectId: _subjectId,
-                        onSubject: (id) => setState(() => _subjectId = id),
-                        description: _description,
-                        onDescriptionChanged: () => setState(() {}),
-                        questions: _questions,
-                        onQuestions: (n) => setState(() => _questions = n),
-                        error: _error,
-                        starting: _starting,
-                        canSubmit: _canSubmit,
-                        onSubmit: _submit,
+                    ContentConstraint(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          if (job != null)
+                            JobProgressView(
+                              started: job,
+                              method: _method!,
+                              source: _source,
+                              onDone: (quizId) {
+                                context.pop();
+                                context.push('/tests/$quizId');
+                              },
+                              onRetry: () => setState(() => _job = null),
+                              onChangeMethod: () => setState(() {
+                                _job = null;
+                                _method = null;
+                                _pdf = null;
+                                _pdfSize = null;
+                                _error = null;
+                              }),
+                            )
+                          else if (_method == null)
+                            _MethodStep(onPick: (m) => setState(() => _method = m))
+                          else
+                            _FormStep(
+                              method: _method!,
+                              pdf: _pdf,
+                              pdfBytes: _pdfSize,
+                              onPickPdf: _pickPdf,
+                              onClearPdf: () => setState(() {
+                                _pdf = null;
+                                _pdfSize = null;
+                              }),
+                              subjectId: _subjectId,
+                              onSubject: (id) => setState(() => _subjectId = id),
+                              description: _description,
+                              onDescriptionChanged: () => setState(() {}),
+                              questions: _questions,
+                              onQuestions: (n) => setState(() => _questions = n),
+                              error: _error,
+                              starting: _starting,
+                              canSubmit: _canSubmit,
+                              onSubmit: _submit,
+                            ),
+                        ],
                       ),
+                    ),
                   ],
                 ),
               ),
@@ -194,31 +233,66 @@ class _MethodStep extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
+
+    final pdf = MethodCard(
+      icon: Icons.upload_file_rounded,
+      color: AppColors.blue,
+      title: 'PDF fayldan',
+      who: 'Darslik yoki konspekt bo‘lsa',
+      facts: const [
+        'Matnli PDF, 5 MB gacha',
+        'Savollar fayl mazmunidan olinadi',
+        'Odatda 2–3 daqiqa',
+      ],
+      onTap: () => onPick(CreateMethod.pdf),
+    );
+    final ai = MethodCard(
+      icon: Icons.auto_awesome_rounded,
+      color: AppColors.violet,
+      title: 'AI bilan yaratish',
+      who: 'Faqat mavzu bo‘lsa',
+      facts: const [
+        'Fan va mavzuni yozasiz',
+        'Savollar sonini o‘zingiz tanlaysiz',
+        'Odatda 1–2 daqiqa',
+      ],
+      onTap: () => onPick(CreateMethod.ai),
+    );
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        MethodCard(
-          icon: Icons.upload_file_rounded,
-          color: AppColors.sky,
-          title: 'PDF fayldan',
-          description: 'Mavjud PDF hujjatingizdan testni avtomatik yarating. '
-              'AI savollarni tahlil qiladi va test tuzadi.',
-          duration: '~2-3 daqiqa',
-          trait: 'Avtomatik',
-          traitIcon: Icons.bolt_rounded,
-          onTap: () => onPick(CreateMethod.pdf),
+        Text(
+          'Test qanday yaratilsin?',
+          style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800, color: c.textPrimary),
         ),
-        const SizedBox(height: 12),
-        MethodCard(
-          icon: Icons.auto_awesome_rounded,
-          color: AppColors.violet,
-          title: 'AI bilan yaratish',
-          description: 'Mavzu va parametrlarni kiriting, AI sizga qiyin va '
-              'sifatli test savollarini yaratib beradi.',
-          duration: '~1-2 daqiqa',
-          trait: 'Intellektual',
-          traitIcon: Icons.auto_awesome_rounded,
-          onTap: () => onPick(CreateMethod.ai),
+        const SizedBox(height: 5),
+        Text(
+          'Ikkalasida ham savollarni AI tuzadi — farqi nimadan boshlashingizda.',
+          style: TextStyle(fontSize: 13, height: 1.5, color: c.textSecondary),
+        ),
+        const SizedBox(height: 16),
+        // Side by side on a tablet, as on the web's `md:grid-cols-2`.
+        if (context.isTablet)
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(child: pdf),
+                const SizedBox(width: 16),
+                Expanded(child: ai),
+              ],
+            ),
+          )
+        else ...[
+          pdf,
+          const SizedBox(height: 12),
+          ai,
+        ],
+        const SizedBox(height: 16),
+        const HintPill(
+          text: 'Tayyor test “Testlar” bo‘limiga saqlanadi va uni keyin tahrirlashingiz mumkin.',
         ),
       ],
     );
@@ -230,6 +304,7 @@ class _FormStep extends ConsumerWidget {
   const _FormStep({
     required this.method,
     required this.pdf,
+    required this.pdfBytes,
     required this.onPickPdf,
     required this.onClearPdf,
     required this.subjectId,
@@ -246,6 +321,7 @@ class _FormStep extends ConsumerWidget {
 
   final CreateMethod method;
   final File? pdf;
+  final int? pdfBytes;
   final VoidCallback onPickPdf;
   final VoidCallback onClearPdf;
   final int? subjectId;
@@ -259,9 +335,21 @@ class _FormStep extends ConsumerWidget {
   final bool canSubmit;
   final VoidCallback onSubmit;
 
+  /// What still has to be filled in, or `null` once the form can be submitted.
+  String? get _missing {
+    if (canSubmit) return null;
+    if (method == CreateMethod.pdf) {
+      if (pdf == null) return 'Davom etish uchun PDF fayl tanlang.';
+      return 'Bu fayl juda katta. Kichikroq PDF tanlang — masalan, faqat '
+          'kerakli boblardan iborat faylni.';
+    }
+    if (subjectId == null) return 'Fanni tanlang.';
+    return 'Mavzu va talablarni yozing.';
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final c = context.colors;
+    final ai = method == CreateMethod.ai;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -270,21 +358,32 @@ class _FormStep extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              if (method == CreateMethod.pdf)
-                PdfPicker(file: pdf, onPick: onPickPdf, onClear: onClearPdf)
+              _FormHeader(method: method),
+              const _FormDivider(),
+              if (!ai)
+                PdfPicker(
+                  file: pdf,
+                  bytes: pdfBytes,
+                  onPick: onPickPdf,
+                  onClear: onClearPdf,
+                )
               else ...[
                 _SubjectPicker(value: subjectId, onChanged: onSubject),
-                const SizedBox(height: 16),
+                const SizedBox(height: 18),
                 AppTextField(
-                  label: 'Tavsif *',
+                  label: 'Mavzu va talablar *',
                   hint: 'Masalan: Fizika fanidan dinamika va saqlanish qonunlari '
-                      "bo'yicha test yaratib ber",
+                      'bo‘yicha test yaratib ber',
                   maxLines: 4,
                   maxLength: 500,
                   controller: description,
                   onChanged: (_) => onDescriptionChanged(),
                 ),
-                const SizedBox(height: 16),
+                const _FieldHelp(
+                  text: 'Qanchalik aniq yozsangiz, savollar shunchalik mos bo‘ladi: '
+                      'fan, bo‘lim va qamrab olinadigan mavzular.',
+                ),
+                const SizedBox(height: 18),
                 _QuestionCount(value: questions, onChanged: onQuestions),
               ],
             ],
@@ -292,7 +391,7 @@ class _FormStep extends ConsumerWidget {
         ),
         if (error != null) ...[
           const SizedBox(height: 14),
-          Text(error!, style: const TextStyle(fontSize: 13, color: AppColors.error)),
+          HintPill(text: error!, icon: Icons.error_outline_rounded, tone: AppColors.error),
         ],
         const SizedBox(height: 20),
         GradientButton(
@@ -302,17 +401,101 @@ class _FormStep extends ConsumerWidget {
           loading: starting,
           onPressed: onSubmit,
         ),
-        const SizedBox(height: 10),
-        Text(
-          method == CreateMethod.pdf
-              ? 'Faqat PDF, 5 MB gacha'
-              : "Savollar soni ${CreateLimits.minQuestions}–${CreateLimits.maxQuestions} oralig'ida",
-          textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 12, color: c.textMuted),
+        const SizedBox(height: 12),
+        // While the form is incomplete the pill says what is missing; the
+        // disabled button on its own never did.
+        if (_missing != null)
+          HintPill(text: _missing!, icon: Icons.info_outline_rounded)
+        else
+          HintPill(
+            icon: Icons.schedule_rounded,
+            text: ai
+                ? 'Savollar soni ${CreateLimits.minQuestions}–${CreateLimits.maxQuestions} '
+                    'oralig‘ida. Tayyorlash odatda 1–2 daqiqa davom etadi.'
+                : 'Tayyorlash odatda 2–3 daqiqa davom etadi.',
+          ),
+      ],
+    );
+  }
+}
+
+/// Says which method is being filled in, so step 2 does not look like a bare
+/// list of fields.
+class _FormHeader extends StatelessWidget {
+  const _FormHeader({required this.method});
+
+  final CreateMethod method;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final ai = method == CreateMethod.ai;
+    final tone = context.readable(ai ? AppColors.violet : AppColors.blue);
+
+    return Row(
+      children: [
+        Container(
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            color: AppColors.tint(tone, 0x21),
+            borderRadius: BorderRadius.circular(13),
+            border: Border.all(color: AppColors.tint(tone, 0x4D)),
+          ),
+          child: Icon(
+            ai ? Icons.auto_awesome_rounded : Icons.upload_file_rounded,
+            size: 22,
+            color: tone,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                ai ? 'AI bilan yaratish' : 'PDF fayldan',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: c.textPrimary),
+              ),
+              const SizedBox(height: 3),
+              Text(
+                ai
+                    ? 'Mavzuni yozing — AI savol va variantlarni o‘zi tuzadi'
+                    : 'Faylni yuklang — AI uni testga aylantiradi',
+                style: TextStyle(fontSize: 12, height: 1.4, color: c.textMuted),
+              ),
+            ],
+          ),
         ),
       ],
     );
   }
+}
+
+class _FormDivider extends StatelessWidget {
+  const _FormDivider();
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.fromLTRB(0, 16, 0, 18),
+        child: Container(height: 1, color: context.colors.border),
+      );
+}
+
+/// Helper line under a field.
+class _FieldHelp extends StatelessWidget {
+  const _FieldHelp({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(top: 6),
+        child: Text(
+          text,
+          style: TextStyle(fontSize: 12, height: 1.4, color: context.colors.textMuted),
+        ),
+      );
 }
 
 /// "Fan *" dropdown over the real subject list.

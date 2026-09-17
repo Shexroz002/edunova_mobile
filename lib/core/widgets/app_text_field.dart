@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../theme/app_colors.dart';
 
@@ -20,6 +21,9 @@ class AppTextField extends StatefulWidget {
     this.enabled = true,
     this.maxLines = 1,
     this.maxLength,
+    this.inputFormatters,
+    this.autofocus = false,
+    this.focusNode,
   });
 
   final String label;
@@ -38,6 +42,11 @@ class AppTextField extends StatefulWidget {
   /// More than one turns the field into a textarea.
   final int maxLines;
   final int? maxLength;
+
+  /// Shapes the text as it is typed, e.g. to keep a username lowercase.
+  final List<TextInputFormatter>? inputFormatters;
+  final bool autofocus;
+  final FocusNode? focusNode;
 
   @override
   State<AppTextField> createState() => _AppTextFieldState();
@@ -66,12 +75,15 @@ class _AppTextFieldState extends State<AppTextField> {
         const SizedBox(height: 6),
         TextField(
           controller: widget.controller,
+          focusNode: widget.focusNode,
           enabled: widget.enabled,
           obscureText: widget.isPassword && _obscure,
           keyboardType: widget.keyboardType,
           textInputAction: widget.textInputAction,
           maxLines: widget.isPassword ? 1 : widget.maxLines,
           maxLength: widget.maxLength,
+          inputFormatters: widget.inputFormatters,
+          autofocus: widget.autofocus,
           autofillHints: widget.autofillHints,
           onChanged: widget.onChanged,
           onSubmitted: widget.onSubmitted,

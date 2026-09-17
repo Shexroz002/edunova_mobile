@@ -74,8 +74,7 @@ class ChatInfoScreen extends ConsumerWidget {
             return const EmptyView(icon: Icons.forum_outlined, title: 'Ma\'lumot yo\'q');
           }
 
-          bool isOnline(ChatMember member) =>
-              presence[member.userId]?.online ?? member.isOnline;
+          bool isOnline(ChatMember member) => presence[member.userId]?.online ?? member.isOnline;
           final onlineCount = detail.members.where(isOnline).length;
           final peer = detail.otherMember(me);
 
@@ -199,9 +198,7 @@ class _Subtitle extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.colors;
     if (!detail.kind.isGroup) {
-      final text = peerOnline == true
-          ? 'onlayn'
-          : formatLastSeen(peerLastSeen) ?? 'oflayn';
+      final text = peerOnline == true ? 'onlayn' : formatLastSeen(peerLastSeen) ?? 'oflayn';
       return Text(
         text,
         style: TextStyle(
@@ -314,7 +311,7 @@ class _Tag extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: color),
+        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: color),
       ),
     );
   }

@@ -408,7 +408,7 @@ class _StatusBar extends StatelessWidget {
                       child: Text(
                         '${c.answeredCount}',
                         style: const TextStyle(
-                          fontSize: 11,
+                          fontSize: 12,
                           fontWeight: FontWeight.w800,
                           color: AppColors.success,
                         ),
@@ -432,7 +432,7 @@ class _StatusBar extends StatelessWidget {
                     const SizedBox(width: 8),
                     Text(
                       '${(progress * 100).round()}%',
-                      style: TextStyle(fontSize: 11, color: colors.textMuted),
+                      style: TextStyle(fontSize: 12, color: colors.textMuted),
                     ),
                   ],
                 ),

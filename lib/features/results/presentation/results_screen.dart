@@ -28,7 +28,10 @@ enum _Sort { recent, best, worst }
 
 /// Test history: summary, sorting and per-session actions (result, review, leaderboard).
 class ResultsScreen extends ConsumerStatefulWidget {
-  const ResultsScreen({super.key});
+  const ResultsScreen({super.key, this.openSessionId});
+
+  /// Session whose leaderboard opens as soon as the history is on screen.
+  final int? openSessionId;
 
   @override
   ConsumerState<ResultsScreen> createState() => _ResultsScreenState();
@@ -36,6 +39,9 @@ class ResultsScreen extends ConsumerStatefulWidget {
 
 class _ResultsScreenState extends ConsumerState<ResultsScreen> {
   _Sort _sort = _Sort.recent;
+
+  /// Guards the one-shot auto-open, so the sheet does not reappear on rebuild.
+  bool _opened = false;
 
   /// The web hides the field behind a button in the header and filters the list
   /// as you type; the history is already loaded here, so the filter is local.
@@ -83,6 +89,25 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen> {
     return list;
   }
 
+  /// Opens the requested leaderboard after the first frame that has data, so
+  /// the sheet can carry the row's own title and date.
+  void _autoOpen(List<HistoryItem> items) {
+    final sessionId = widget.openSessionId;
+    if (_opened || sessionId == null) return;
+    _opened = true;
+
+    final match = items.where((i) => i.sessionId == sessionId).firstOrNull;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      showLeaderboardSheet(
+        context,
+        sessionId: sessionId,
+        title: match?.title,
+        date: match?.finishedAt ?? match?.createdAt,
+      );
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final history = ref.watch(historyProvider);
@@ -98,6 +123,7 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen> {
           data: (all) {
             final items = all;
             final visible = _matching(items);
+            _autoOpen(items);
             return RefreshIndicator(
               onRefresh: () => ref.refresh(historyProvider.future),
               child: ListView(
@@ -378,7 +404,7 @@ class _StatTile extends StatelessWidget {
             label,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(fontSize: 11, color: c.textMuted),
+            style: TextStyle(fontSize: 12, color: c.textMuted),
           ),
         ],
       ),
@@ -491,7 +517,6 @@ class _HistoryCard extends StatelessWidget {
                     icon: Icons.visibility_outlined,
                     label: "Ko'rish",
                     accent: AppColors.sky,
-                    lightText: const Color(0xFF0284C7),
                     onTap: () => showResultDetailSheet(context, item: item),
                   ),
                 ),
@@ -501,7 +526,6 @@ class _HistoryCard extends StatelessWidget {
                     icon: Icons.groups_outlined,
                     label: 'Reyting',
                     accent: AppColors.brand,
-                    lightText: AppColors.brand,
                     onTap: () => showLeaderboardSheet(
                       context,
                       sessionId: item.sessionId,
@@ -526,22 +550,18 @@ class _CardAction extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.accent,
-    required this.lightText,
     required this.onTap,
   });
 
   final IconData icon;
   final String label;
   final Color accent;
-
-  /// The web darkens the label in light mode so it stays readable on a tint.
-  final Color lightText;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final dark = context.isDark;
-    final foreground = dark ? accent : lightText;
+    final foreground = context.readable(accent);
 
     return Material(
       color: AppColors.tint(accent, dark ? 0x1A : 0x14),
@@ -593,7 +613,11 @@ class _ScorePill extends StatelessWidget {
       ),
       child: Text(
         formatPercent(percent),
-        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: color),
+        style: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w800,
+          color: context.readable(color),
+        ),
       ),
     );
   }
@@ -620,11 +644,11 @@ class _Count extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: color),
+          Icon(icon, size: 14, color: context.readable(color)),
           const SizedBox(width: 5),
           Text(
             text,
-            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: c.textSecondary),
+            style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: c.textSecondary),
           ),
         ],
       ),

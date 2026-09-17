@@ -88,8 +88,7 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
       case MessageAction.copy:
         await Clipboard.setData(ClipboardData(text: message.text ?? ''));
         if (mounted) {
-          ScaffoldMessenger.of(context)
-              .showSnackBar(const SnackBar(content: Text('Nusxa olindi')));
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Nusxa olindi')));
         }
       case MessageAction.forward:
         await _forward(message);
@@ -175,8 +174,7 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
                 currentUserId: me,
                 scroll: _scroll,
                 onLongPress: _onLongPress,
-                onReactionTap: (message, emoji) =>
-                    _controller.toggleReaction(message, emoji),
+                onReactionTap: (message, emoji) => _controller.toggleReaction(message, emoji),
               ),
             ),
           ),
@@ -387,9 +385,7 @@ List<_RoomItem> _buildItems(ChatRoomState room, int currentUserId) {
     }
 
     final isOwn = message.senderId == currentUserId;
-    final member = detail?.members
-        .where((m) => m.userId == message.senderId)
-        .firstOrNull;
+    final member = detail?.members.where((m) => m.userId == message.senderId).firstOrNull;
     final startsRun = lastSender != message.senderId;
 
     items.add(_MessageItem(

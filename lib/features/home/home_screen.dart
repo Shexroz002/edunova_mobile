@@ -16,6 +16,7 @@ import '../analytics/domain/analytics_models.dart';
 import '../auth/presentation/auth_controller.dart';
 import '../competition/presentation/join_code_sheet.dart';
 import '../notifications/presentation/widgets/notification_bell.dart';
+import '../tests/presentation/start_test_sheet.dart';
 
 /// Student dashboard, laid out like the web `StudentHomePage.tsx`: greeting,
 /// stat cards, the "Test ishlash" hero, quick actions, the competition card and
@@ -27,6 +28,15 @@ import '../notifications/presentation/widgets/notification_bell.dart';
 /// "~15 min" estimate are dropped for the same reason.
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
+
+  /// Opens the start sheet and, once a session exists, the play screen.
+  ///
+  /// The hero used to push the whole test list, which left the student four
+  /// screens away from the thing they had just asked for.
+  static Future<void> _startTest(BuildContext context, WidgetRef ref) async {
+    final sessionId = await showStartTestSheet(context);
+    if (sessionId != null && context.mounted) context.push('/session/$sessionId/play');
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -59,7 +69,7 @@ class HomeScreen extends ConsumerWidget {
                   const SizedBox(height: 16),
                   const _StatCards(),
                   const SizedBox(height: 16),
-                  _PlayHero(onStart: () => context.push('/tests')),
+                  _PlayHero(onStart: () => _startTest(context, ref)),
                   const SizedBox(height: 14),
                   _QuickActions(columns: columns),
                   const SizedBox(height: 14),
@@ -196,7 +206,7 @@ class _StatCard extends StatelessWidget {
         color: AppColors.tint(color),
         borderRadius: BorderRadius.circular(horizontal ? 12 : 10),
       ),
-      child: Icon(icon, size: horizontal ? 21 : 17, color: color),
+      child: Icon(icon, size: horizontal ? 21 : 17, color: context.readable(color)),
     );
 
     final number = loading
@@ -317,7 +327,7 @@ class _PlayHero extends StatelessWidget {
                           child: const Text(
                             'ASOSIY',
                             style: TextStyle(
-                              fontSize: 10,
+                              fontSize: 11,
                               fontWeight: FontWeight.w800,
                               letterSpacing: 1,
                               color: Colors.white,
@@ -432,19 +442,32 @@ class _QuickActions extends ConsumerWidget {
       ),
     ];
 
-    // A fixed tile height instead of an aspect ratio: on a tablet four columns
-    // of ~215 dp would otherwise be 205 dp tall, leaving most of each card
-    // empty. The content is the same in every tile, so one height fits all.
-    return GridView(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: columns,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-        mainAxisExtent: 152,
-      ),
-      children: tiles,
+    // Rows of equal-width tiles rather than a grid: a grid needs the height up
+    // front, and any fixed value is wrong as soon as the reader raises the
+    // system font size — at 1.15 the tiles overflowed by 7 px. `IntrinsicHeight`
+    // lets the tallest tile in each row set the height for its neighbours.
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (var start = 0; start < tiles.length; start += columns) ...[
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                for (var column = 0; column < columns; column++) ...[
+                  Expanded(
+                    child: start + column < tiles.length
+                        ? tiles[start + column]
+                        : const SizedBox.shrink(),
+                  ),
+                  if (column < columns - 1) const SizedBox(width: 12),
+                ],
+              ],
+            ),
+          ),
+          if (start + columns < tiles.length) const SizedBox(height: 12),
+        ],
+      ],
     );
   }
 }
@@ -509,7 +532,7 @@ class _ActionTile extends StatelessWidget {
                     color: AppColors.tint(color),
                     borderRadius: BorderRadius.circular(11),
                   ),
-                  child: Icon(icon, size: 19, color: color),
+                  child: Icon(icon, size: 19, color: context.readable(color)),
                 ),
                 const Spacer(),
                 Text(
@@ -626,7 +649,7 @@ class _CompetitionCard extends StatelessWidget {
                       child: Text(
                         label,
                         style: TextStyle(
-                          fontSize: 11,
+                          fontSize: 12,
                           fontWeight: FontWeight.w700,
                           color: color,
                         ),

@@ -70,13 +70,24 @@ class QuizCard extends StatelessWidget {
                                 color: Color(0xFFA78BFA),
                                 icon: Icons.auto_awesome_rounded,
                               ),
-                            Pill(
-                              label: quiz.source.label,
-                              color: AppColors.sky,
-                              icon: quiz.source == QuizSource.ai
-                                  ? Icons.auto_awesome_rounded
-                                  : Icons.picture_as_pdf_outlined,
-                            ),
+                            // A quiz nobody owns comes from the shared
+                            // library. How it was generated is our business,
+                            // not the student's, so the badge says whose it is
+                            // instead of where it came from.
+                            if (!quiz.canEdit)
+                              const Pill(
+                                label: 'Tizim testi',
+                                color: AppColors.emerald,
+                                icon: Icons.verified_outlined,
+                              )
+                            else
+                              Pill(
+                                label: quiz.source.label,
+                                color: AppColors.sky,
+                                icon: quiz.source == QuizSource.ai
+                                    ? Icons.auto_awesome_rounded
+                                    : Icons.picture_as_pdf_outlined,
+                              ),
                           ],
                         ),
                         const SizedBox(height: 8),

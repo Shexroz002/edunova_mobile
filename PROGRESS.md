@@ -726,6 +726,189 @@ tick at all until the peer read it, rather than the single "stored" tick it had 
 broke the **Android** build, not just Linux.
 
 
+## Light rejim — kontrast va o'qish qulayligi (2026-09-14)
+
+Six fixes from the light-mode audit, all measured rather than judged by eye.
+
+**Colour.** The light greys carried almost every caption in the app at 2.56:1 — body text needs
+4.5:1 — so both text greys move one step darker (`textSecondary` → `#475569`, `textMuted` →
+`#64748B`). Dark mode had the mirror problem, `textMuted` at 3.07:1 on a card, and moves one step
+lighter.
+
+The bright semantic colours are tuned for fills, not type: `emerald` reads 1.92:1 as text on white.
+`AppColors.readable()` now returns the text-safe twin per theme — `#34D399 → #047857`,
+`#F59E0B → #B45309`, `#22C55E → #15803D`, `#EF4444 → #DC2626`, `#38BDF8 → #0369A1`,
+`#6366F1 → #4F46E5`, and `#EF4444 → #F87171` in dark. Fills, gradients and progress bars keep the
+bright tone; only labels, links and icons take the twin. `Pill` and `GradeBadge` apply it centrally,
+so most of the app was fixed in two widgets.
+
+**Font scaling.** The home tiles had a fixed 152 dp height, which overflowed by 7 px at the system
+font scale of 1.15 and 16 px at 1.3 — the hazard stripes were visible on a real phone. They are now
+rows of `IntrinsicHeight`, so a tile grows with its text. The six-destination bar broke the same
+way; its labels are held at `maxScaleFactor: 1.1` while the rest of the app scales freely.
+
+**Sizes.** The smallest text moved one step up across 18 files (11 → 12, 10 → 11, 9 → 10), leaving
+the navigation labels, pill chips and the PDF export alone. Header buttons went 36 → 44 dp, the
+minimum both Material and iOS ask for; the icons inside are unchanged.
+
+**Colour-blind safety.** The subject bar in Statistika split correct from wrong by red against green
+alone — the one pair most likely to be missed. The wrong share is now hatched as well as tinted.
+
+Verified on the device in both themes and at font scales 1.0, 1.15 and 1.3. The audit itself,
+with the before/after specimens, is published as an artifact.
+
+## Test yaratish: jarayon ekrani va AI formasi
+
+**The provider name leaked.** The progress screen rendered the worker's own `message`, and that text
+names the AI vendor — "PDF Mistral serveriga yuklanmoqda", "AI provider tayyorlanmoqda: gemini". The
+message is no longer shown at all. The stage comes from `progress` instead, whose steps are fixed in
+the backend (PDF 10 → 15 → 30 → 50 → 80 → 85 → 100, AI 10 → 50 → 75 → 80 → 85 → 100) and are mapped
+in `JobStage.of`, with a test pinned to those real values.
+
+**A percentage is not progress.** The backend can sit on one number for forty seconds, so the old bar
+read as a freeze. The screen is now a ring plus a four-stage checklist — tayyorlash, yuborish,
+savollar, saqlash — that ticks along, with the elapsed time and the usual duration under it. Past
+90 s, or while the worker retries the AI, the whole card turns amber and says so instead of leaving
+the student guessing.
+
+**The request is visible.** A source card names the file or the subject and question count, so a
+wrong pick is obvious in the first seconds rather than two minutes later.
+
+**Both ends of the job.** A finished job holds a success card for two seconds — question count and
+all four ticks — before the quiz opens; it is now driven from `build`, because a job that arrives
+already complete never fires a listener. A failed job keeps the source card, gives two concrete
+next steps that follow the method, and offers "Boshqa usulni tanlash" as well as a retry.
+
+**AI bilan yaratish** got the same language: a header that names the method, a divider, "Mavzu va
+talablar" with a helper line, and the loose grey sentences under the cards replaced by `HintPill`.
+
+Light mode was the risk here — bright `sky` and `emerald` are fill tokens that fall under 3:1 on
+white — so every accent on this screen resolves through `context.readable`. Verified on the device
+in both themes: progress, success and failure states.
+
+## Test yaratish: usul tanlash va PDF formasi
+
+**Three steps, none of them visible.** The flow has always had three, but only a
+small grey line said so, and its text changed each time. `StepRail` replaces it:
+Usul → Ma‘lumot → Tayyorlash, ticked behind, numbered ahead. It sits outside the
+scroll view, so it stays put while the content moves.
+
+**The choice now decides something.** Both method cards used to end in an
+adjective — "Avtomatik", "Intellektual" — which tells a student nothing. Each card
+now leads with who the method is for ("Darslik yoki konspekt bo‘lsa" / "Faqat
+mavzu bo‘lsa") and lists three facts that settle it: the size limit, who picks the
+question count, how long it takes. On a tablet the two sit side by side, as on the
+web's `md:grid-cols-2`.
+
+**PDF rules before the pick, not after.** The 5 MB limit was small print and the
+selectable-text rule was never stated at all — a student learnt it from a failed
+job two minutes later. Both are now inside the drop zone. A file over the limit is
+called out on the spot, and **cannot be submitted**: `_canSubmit` checked only that
+a file existed, so an 8 MB PDF went to the backend to be refused.
+
+**The disabled button says what is missing** — "Davom etish uchun PDF fayl
+tanlang", "Fanni tanlang", "Mavzu va talablarni yozing" — instead of just sitting
+there greyed out.
+
+A test caught one real fragility on the way: the requirement rows were inelastic,
+so they overflowed a 326 dp card. They wrap now.
+
+Verified on the device in both themes, and 131 tests pass.
+
+## Musobaqa yaratish: one screen instead of a wizard
+
+**1900 px for three decisions, two of which were already made.** The screen led
+with a full-height gradient card selling four features to a student who had
+already tapped "Musobaqa", then asked for a quiz, a participant count and a
+duration behind three collapsible steps — and then repeated all three values in a
+"Musobaqa xulosasi" card that, before anything was chosen, was a wall of three
+em-dashes and three "Belgilanmagan". Reaching the button took two scrolls.
+
+It is one screen now. The hero and the summary card are gone; the quiz choice is
+one large tappable card, the two settings sit in a second card with their values
+and presets on show, and the action is pinned to the bottom with a one-line
+summary above it. `StepCard` and `NumberStepper` went with the wizard, so
+`widgets/step_card.dart` is deleted and the screen is renamed from
+`CompetitionWizardScreen` to `CompetitionCreateScreen` — it is no longer a wizard.
+
+**"0/3 bajarildi" was never true.** Participants and duration always had defaults
+the steppers were already displaying. There is exactly one open decision, so the
+bottom bar names it: "Boshlash uchun test tanlang".
+
+**A student with no quiz had no way forward.** `quiz_list` filters by `user_id`,
+so somebody who has never made a quiz opened an empty picker sheet and stopped.
+The card now says so and sends them to Test yaratish.
+
+Two layout defects surfaced on the device rather than in review, both worth
+remembering: a `Container` with a non-null `alignment` fills its incoming
+constraints, so every preset chip took a whole `Wrap` row; and the stepper at
+158 dp left the label 108 dp, one pixel short of "Ishtirokchilar", which wrapped.
+The chips are `Center(widthFactor: 1)` with a 44 dp floor and full width now.
+
+## Do'stlar bilan Test: the waiting room
+
+**The same fact, three times.** `1/1 tayyor`, `Hozircha 1 ishtirokchi qo'shildi`
+and `Kamida 2 kishi kerak` all described one state in three different words, in
+three places. The ready count is the worst of them: joining the socket is what
+marks a student ready, so it is almost always full and says nothing. It is gone.
+The card counts present people (`1 kishi`), and only somebody who is *not* here
+is called out — on their own row, as `Ulanmagan`.
+
+**The header scrolled away, taking the connection pill with it.** The pill is
+the one thing that matters while waiting, so it now lives in a fixed
+`PageAppBar`, and a dropped socket also takes over the pinned status line.
+Starting still works over HTTP, so a blip never disables the button.
+
+**Two loud full-width buttons competed.** The green "Do'st qo'shish" is now the
+last row of the participants list, where the people are; the joiner's
+`_WaitingHint` card folded into the pinned bar as its own state.
+
+**The code was a 74 px panel with the session named elsewhere.** `JoinCodeCard`
+carries both now: the code grouped in threes (`LZA KCI`) so it can be read out
+over the phone, share and copy beside it, then the quiz name and — for the first
+time — its subject, question count and length. The amber "Sessiya ma'lumotlari"
+card is deleted; amber was a warning colour on plain reference data.
+
+`max_participants` would have made the wait legible as `3 / 4` with empty slots,
+but `/multiplayer/{id}/info/` does not return it even though the session stores
+it (issue 51). The design deliberately shows no maximum rather than guessing.
+
+One layout defect the tests caught: the pinned buttons' labels sat in inelastic
+rows and overflowed a narrow screen. A second one only showed on the device —
+`Shehroz Toshpo'latov · Siz` plus the Host badge ate the marker, so "Siz" became
+a badge of its own and the name ellipsizes.
+
+Verified on the device in dark; light mode is covered by widget tests only,
+since re-entering the lobby to switch themes costs another live session.
+
+## Test ishlash: one sheet instead of four screens
+
+The home hero's "Boshlash" pushed the whole test list, so starting a test meant
+list → quiz → detail → time sheet. The web does it in one modal, and the app now
+does too: `showStartTestSheet` takes an optional quiz, and asks for one when the
+caller has none. The quiz detail and the test list pass theirs, so a single
+widget serves all three entry points.
+
+**The picker moved** from `features/competition/presentation/widgets/` to
+`features/tests/presentation/` — it is about quizzes, and two features use it.
+`QuizDetail.asSummary` replaces the hand-built `QuizSummary` both the start sheet
+and the competition screen were assembling.
+
+**The web's difficulty badge is not ported.** It reads "Oson / O'rtacha / Qiyin"
+but is computed from the question count (`>= 30 ? 'Qiyin' : >= 15 ? …`), so a
+thirty-question easy test is labelled hard. `CLAUDE.md` forbids porting mock UI;
+the rows carry the subject and the question count, which are real.
+
+**The recommendation follows the quiz.** `suggestedMinutes` is one minute per
+question, at least ten, so the ★ only appears once a quiz is chosen and moves
+when it changes. Until then the chips are inert — there is nothing to base a
+recommendation on.
+
+A centred dialog was considered, to match the web exactly. It is possible
+(`showDialog`), but it brings back a close button, wraps more at 390 dp, and
+would drag the quiz picker into a dialog too — every other modal in the app is a
+sheet, and Material puts forms in sheets. The owner chose the sheet.
+
 ## Next
 Tablet pass, part 2: test detali, guruh detali, sessiya natijasi, test ishlash, test yaratish and
 profil tahrirlash still need the same treatment.

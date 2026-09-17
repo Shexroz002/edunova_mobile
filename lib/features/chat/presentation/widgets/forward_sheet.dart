@@ -208,9 +208,7 @@ class _CheckBox extends StatelessWidget {
         shape: BoxShape.circle,
         border: Border.all(color: checked ? AppColors.brand : c.border, width: 2),
       ),
-      child: checked
-          ? const Icon(Icons.check_rounded, size: 14, color: Colors.white)
-          : null,
+      child: checked ? const Icon(Icons.check_rounded, size: 14, color: Colors.white) : null,
     );
   }
 }

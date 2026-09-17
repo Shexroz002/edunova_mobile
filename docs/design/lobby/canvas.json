@@ -1,0 +1,85 @@
+{
+  "artboards": [
+    {
+      "file": "Main.dc.html",
+      "x": 0,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "Yolg‘iz kutish — dark"
+    },
+    {
+      "file": "Ready.dc.html",
+      "x": 470,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "Boshlashga tayyor — dark"
+    },
+    {
+      "file": "Guest.dc.html",
+      "x": 940,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "Qo‘shilgan o‘quvchi"
+    },
+    {
+      "file": "Offline.dc.html",
+      "x": 1410,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "Ulanish uzildi"
+    },
+    {
+      "file": "MainLight.dc.html",
+      "x": 0,
+      "y": 1000,
+      "w": 390,
+      "h": 844,
+      "title": "Tayyor — light"
+    },
+    {
+      "file": "Tablet.dc.html",
+      "x": 470,
+      "y": 1000,
+      "w": 900,
+      "h": 720,
+      "title": "Planshet"
+    }
+  ],
+  "annotations": [
+    {
+      "id": "problem",
+      "x": 1900,
+      "y": 0,
+      "w": 350,
+      "text": "HOZIR NIMA NOTO‘G‘RI\n\n1. Bir xil narsa uch joyda aytilgan: \"1/1 tayyor\" pili, \"Hozircha 1 ishtirokchi qo‘shildi\" va \"Kamida 2 kishi kerak\". Uchtasi ham bir xil holatni, lekin boshqa-boshqa so‘z bilan tasvirlaydi.\n\n2. \"1/1 tayyor\" tushunarsiz — u \"hozir shu yerda turgan 1 kishidan 1 tasi tayyor\" degani, lekin \"1 o‘rindan 1 tasi band\" deb o‘qiladi. Socketga ulanish o‘zi tayyor qilib qo‘yadi, ya‘ni bu son deyarli har doim to‘liq — foydasiz shovqin.\n\n3. Ikkita baland, butun kenglikdagi tugma bir-biri bilan raqobatlashadi: yashil \"Do‘st qo‘shish\" va indigo \"Testni boshlash\".\n\n4. Header ~300 px joy oladi va scroll bilan ketib qoladi — ulanish holati pili bilan birga, aynan u doim ko‘rinib turishi kerak paytda.\n\n5. Amber \"Sessiya ma‘lumotlari\" kartasi oldingi ekranda tanlangan narsani takrorlaydi. Amber — ogohlantirish rangi, bu esa oddiy ma‘lumot.\n\n6. \"Testni boshlash\" eng pastda, ekrandan tashqarida."
+    },
+    {
+      "id": "design",
+      "x": 1900,
+      "y": 700,
+      "w": 350,
+      "text": "NIMA O‘ZGARDI\n\n- Header mahkamlandi, ulanish pili app bar ichida — doim ko‘rinadi.\n- Kod bloki 74 px lik quti edi va bo‘sh joyni behuda egallardi. Endi kod bir qatorda, uchlikka bo‘lingan (MYJ LOI — telefonda aytib berish uchun), yonida ulashish va nusxalash tugmalari. Bo‘shagan joy testning o‘ziga ketdi: nomi, fani, savollar soni va davomiyligi shu kartada. Ular avval sarlavhada va alohida amber kartada tarqalib yotardi.\n- \"Do‘st qo‘shish\" ro‘yxatning oxirgi qatoriga ko‘chdi: u aynan shu ro‘yxatga tegishli, alohida yashil tugma emas.\n- Uchta takroriy holat matni bittaga keldi va u pastdagi mahkamlangan panelda: \"Kamida 2 kishi kerak\" → \"3 ishtirokchi tayyor\".\n- \"1/1 tayyor\" pili olib tashlandi. O‘rniga sodda \"3 kishi\" sanog‘i, ulanmagan odam esa o‘z qatorida \"Ulanmagan\" deb belgilanadi."
+    },
+    {
+      "id": "guest",
+      "x": 1900,
+      "y": 1400,
+      "w": 350,
+      "text": "QO‘SHILGAN O‘QUVCHI\n\nUnda \"Testni boshlash\" yo‘q, shuning uchun pastdagi panel kutish holatini ko‘rsatadi: aylanuvchi indikator va \"Test boshlanishini kutmoqda\". Hozir bu alohida karta (_WaitingHint) bo‘lib, sahifaning o‘rtasida turadi.\n\nUnga \"Do‘st qo‘shish\" ham ko‘rsatilmaydi — taklif qilish tashkilotchining ishi."
+    },
+    {
+      "id": "backend",
+      "x": 1900,
+      "y": 1900,
+      "w": 350,
+      "text": "BACKEND: MAKSIMUM SONI YO‘Q\n\nAvval \"1 / 4\" va bo‘sh o‘rinlar chizmoqchi edim — bu kutishni eng yaxshi tushuntiradi. Lekin `max_participants` bazada saqlanadi, `GET /multiplayer/{id}/info/` esa uni qaytarmaydi (`QuizSessionTeacherResponse` da bu maydon yo‘q).\n\nShuning uchun dizaynda maksimum umuman ko‘rsatilmaydi — mijoz uni bilmaydi. `docs/BACKEND_ISSUES.md` ga yozib qo‘ydim; qo‘shilsa, sanoq \"3 / 4 kishi\" bo‘ladi va bo‘sh o‘rinlar chiziladi."
+    }
+  ],
+  "launch": {
+    "view": "canvas"
+  }
+}

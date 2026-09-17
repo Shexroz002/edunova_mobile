@@ -32,13 +32,7 @@ class QuizDetailScreen extends ConsumerWidget {
   final int quizId;
 
   Future<void> _start(BuildContext context, QuizDetail quiz) async {
-    final sessionId = await showStartTestSheet(
-      context,
-      quizId: quiz.id,
-      title: quiz.title,
-      questionCount: quiz.questions.length,
-      suggestedMinutes: quiz.suggestedMinutes,
-    );
+    final sessionId = await showStartTestSheet(context, quiz: quiz.asSummary);
     if (sessionId != null && context.mounted) context.push('/session/$sessionId/play');
   }
 
@@ -105,6 +99,7 @@ class QuizDetailScreen extends ConsumerWidget {
                           number: i + 1,
                           question: quiz.questions[i],
                           quizId: quizId,
+                          canEdit: quiz.canEdit,
                         ),
                         const SizedBox(height: 10),
                       ],
@@ -235,7 +230,7 @@ class _DifficultyCount extends StatelessWidget {
           Text(
             '${difficulty.label} savollar',
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 11, color: context.colors.textSecondary),
+            style: TextStyle(fontSize: 12, color: context.colors.textSecondary),
           ),
         ],
       ),
@@ -244,13 +239,22 @@ class _DifficultyCount extends StatelessWidget {
 }
 
 class _QuestionRow extends ConsumerWidget {
-  const _QuestionRow({required this.number, required this.question, required this.quizId});
+  const _QuestionRow({
+    required this.number,
+    required this.question,
+    required this.quizId,
+    required this.canEdit,
+  });
 
   final int number;
   final QuizQuestionBrief question;
 
   /// Needed to refresh this list once the editor closes.
   final int quizId;
+
+  /// The quiz's `is_update`. A catalogue quiz belongs to nobody, and the
+  /// question editor is owner-scoped, so offering it would only 404.
+  final bool canEdit;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -311,6 +315,7 @@ class _QuestionRow extends ConsumerWidget {
           questionId: question.id,
           number: number,
           scrollController: controller,
+          canEdit: canEdit,
         ),
       ),
     );
@@ -332,10 +337,14 @@ class _QuestionPreviewSheet extends ConsumerWidget {
     required this.questionId,
     required this.number,
     required this.scrollController,
+    required this.canEdit,
   });
 
   final int questionId;
   final int number;
+
+  /// Hides the edit action on a quiz the student does not own.
+  final bool canEdit;
 
   /// Comes from the draggable sheet, so dragging and scrolling agree.
   final ScrollController scrollController;
@@ -369,19 +378,21 @@ class _QuestionPreviewSheet extends ConsumerWidget {
                 stateOf: (option) =>
                     option.isCorrect == true ? OptionState.correct : OptionState.idle,
               ),
-              const SizedBox(height: 20),
-              OutlinedButton.icon(
-                // The row that opened this sheet does the navigating, so it can
-                // refresh the list when the editor closes.
-                onPressed: () => Navigator.of(context).pop(true),
-                style: OutlinedButton.styleFrom(
-                  minimumSize: const Size.fromHeight(48),
-                  foregroundColor: context.colors.accent,
-                  side: BorderSide(color: context.colors.border),
+              if (canEdit) ...[
+                const SizedBox(height: 20),
+                OutlinedButton.icon(
+                  // The row that opened this sheet does the navigating, so it
+                  // can refresh the list when the editor closes.
+                  onPressed: () => Navigator.of(context).pop(true),
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size.fromHeight(48),
+                    foregroundColor: context.colors.accent,
+                    side: BorderSide(color: context.colors.border),
+                  ),
+                  icon: const Icon(Icons.edit_outlined, size: 19),
+                  label: const Text('Tahrirlash'),
                 ),
-                icon: const Icon(Icons.edit_outlined, size: 19),
-                label: const Text('Tahrirlash'),
-              ),
+              ],
             ],
           ),
         ),

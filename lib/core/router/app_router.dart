@@ -9,7 +9,7 @@ import '../../features/chat/presentation/chat_info_screen.dart';
 import '../../features/chat/presentation/chat_room_screen.dart';
 import '../../features/chat/presentation/chats_screen.dart';
 import '../../features/common/splash_screen.dart';
-import '../../features/competition/presentation/competition_wizard_screen.dart';
+import '../../features/competition/presentation/competition_create_screen.dart';
 import '../../features/competition/presentation/lobby_screen.dart';
 import '../../features/friends/presentation/friends_screen.dart';
 import '../../features/groups/presentation/group_detail_screen.dart';
@@ -95,7 +95,15 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/tests/:quizId',
         builder: (_, state) => QuizDetailScreen(quizId: _intParam(state, 'quizId')),
       ),
-      GoRoute(path: Routes.results, builder: (_, __) => const ResultsScreen()),
+      GoRoute(
+        path: Routes.results,
+        builder: (_, state) => ResultsScreen(
+          // `?sessionId=` opens that row's leaderboard once the list has
+          // loaded, so a competition-result notification lands on the page the
+          // result belongs to rather than showing a sheet over the notification.
+          openSessionId: int.tryParse(state.uri.queryParameters['sessionId'] ?? ''),
+        ),
+      ),
       GoRoute(path: Routes.notifications, builder: (_, __) => const NotificationsScreen()),
       GoRoute(
         path: '/chats/:chatId',
@@ -115,7 +123,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: Routes.competitionNew,
-        builder: (_, state) => CompetitionWizardScreen(
+        builder: (_, state) => CompetitionCreateScreen(
           initialQuizId: int.tryParse(state.uri.queryParameters['quizId'] ?? ''),
         ),
       ),

@@ -26,7 +26,10 @@ enum QuizSource {
       };
 }
 
-/// A quiz in `GET /student/quizzes/list` (the student's own quizzes).
+/// A quiz in `GET /student/quizzes/list`.
+///
+/// The list carries the student's own quizzes **and** the shared catalogue, so
+/// [canEdit] says which of the two this is.
 class QuizSummary {
   const QuizSummary({
     required this.id,
@@ -37,6 +40,7 @@ class QuizSummary {
     this.description,
     this.subject,
     this.createdAt,
+    this.canEdit = false,
   });
 
   final int id;
@@ -47,6 +51,10 @@ class QuizSummary {
   final bool isNew;
   final QuizSource source;
   final DateTime? createdAt;
+
+  /// `is_update`: only the owner may change a quiz. A catalogue quiz has no
+  /// owner and editing it would 404, so the editor is not offered.
+  final bool canEdit;
 
   /// Suggested time limit in minutes (one minute per question, at least 10).
   int get suggestedMinutes => questionCount < 10 ? 10 : questionCount;
@@ -60,6 +68,7 @@ class QuizSummary {
         isNew: asBool(json['is_new']),
         source: QuizSource.parse(asString(json['quiz_generate_type'])),
         createdAt: parseUtcDate(json['created_at']),
+        canEdit: asBool(json['is_update']),
       );
 }
 
@@ -94,6 +103,7 @@ class QuizDetail {
     required this.questions,
     this.description,
     this.subject,
+    this.canEdit = false,
   });
 
   final int id;
@@ -103,11 +113,26 @@ class QuizDetail {
   final QuizSource source;
   final List<QuizQuestionBrief> questions;
 
+  /// `is_update`; see [QuizSummary.canEdit].
+  final bool canEdit;
+
   /// Number of questions with the given difficulty.
   int countOf(Difficulty difficulty) => questions.where((q) => q.difficulty == difficulty).length;
 
   /// Same suggestion rule as [QuizSummary.suggestedMinutes].
   int get suggestedMinutes => questions.length < 10 ? 10 : questions.length;
+
+  /// The list-shaped view of this quiz, for screens that take a summary.
+  QuizSummary get asSummary => QuizSummary(
+        id: id,
+        title: title,
+        description: description,
+        subject: subject,
+        questionCount: questions.length,
+        isNew: false,
+        source: source,
+        canEdit: canEdit,
+      );
 
   factory QuizDetail.fromJson(Json json) {
     final questions = asJsonList(json['questions']).map(QuizQuestionBrief.fromJson).toList()
@@ -119,6 +144,7 @@ class QuizDetail {
       subject: asString(json['subject']),
       source: QuizSource.parse(asString(json['quiz_generate_type'])),
       questions: questions,
+      canEdit: asBool(json['is_update']),
     );
   }
 }

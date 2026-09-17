@@ -64,7 +64,8 @@ class MessageBubble extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (message.forwardedFrom != null) _ForwardedHeader(from: message.forwardedFrom!, outgoing: outgoing),
+            if (message.forwardedFrom != null)
+              _ForwardedHeader(from: message.forwardedFrom!, outgoing: outgoing),
             if (senderName != null && !outgoing) _SenderLabel(name: senderName!),
             if (message.replyPreview != null)
               _ReplyQuote(
@@ -239,7 +240,9 @@ class _ReplyQuote extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Container(width: 3, decoration: BoxDecoration(color: bar, borderRadius: BorderRadius.circular(2))),
+              Container(
+                  width: 3,
+                  decoration: BoxDecoration(color: bar, borderRadius: BorderRadius.circular(2))),
               const SizedBox(width: 8),
               Flexible(
                 child: Column(
@@ -293,12 +296,12 @@ class _Meta extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
           if (message.edited) ...[
-            Text('tahrirlangan', style: TextStyle(fontSize: 11, color: color)),
+            Text('tahrirlangan', style: TextStyle(fontSize: 12, color: color)),
             const SizedBox(width: 4),
-            Text('·', style: TextStyle(fontSize: 11, color: color)),
+            Text('·', style: TextStyle(fontSize: 12, color: color)),
             const SizedBox(width: 4),
           ],
-          Text(formatMessageClock(message.createdAt), style: TextStyle(fontSize: 11, color: color)),
+          Text(formatMessageClock(message.createdAt), style: TextStyle(fontSize: 12, color: color)),
           if (outgoing) ...[
             const SizedBox(width: 4),
             _Ticks(state: message.deliveryState, onBrand: true),
@@ -320,9 +323,10 @@ class _Ticks extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.colors;
     return switch (state) {
-      DeliveryState.pending =>
-        Icon(Icons.schedule_rounded, size: 13, color: onBrand ? const Color(0x9EFFFFFF) : c.textMuted),
-      DeliveryState.failed => const Icon(Icons.error_outline_rounded, size: 14, color: Color(0xFFFECACA)),
+      DeliveryState.pending => Icon(Icons.schedule_rounded,
+          size: 13, color: onBrand ? const Color(0x9EFFFFFF) : c.textMuted),
+      DeliveryState.failed =>
+        const Icon(Icons.error_outline_rounded, size: 14, color: Color(0xFFFECACA)),
       DeliveryState.sent =>
         Icon(Icons.done_rounded, size: 15, color: onBrand ? const Color(0x9EFFFFFF) : c.textMuted),
       DeliveryState.read => const Icon(Icons.done_all_rounded, size: 15, color: Color(0xFFA5F3FC)),
@@ -424,7 +428,7 @@ class _DeletedBubble extends StatelessWidget {
               const SizedBox(height: 2),
               Text(
                 formatMessageClock(message.createdAt),
-                style: TextStyle(fontSize: 11, color: c.textMuted),
+                style: TextStyle(fontSize: 12, color: c.textMuted),
               ),
             ],
           ),

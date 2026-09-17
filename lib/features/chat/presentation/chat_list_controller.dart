@@ -65,8 +65,7 @@ class ChatListController extends AsyncNotifier<ChatListState> {
   /// Re-reads the list from the server (pull-to-refresh).
   Future<void> refresh() async {
     final chats = await ref.read(chatRepositoryProvider).fetchChats();
-    state = AsyncData((state.valueOrNull ?? const ChatListState())
-        .copyWith(chats: _sorted(chats)));
+    state = AsyncData((state.valueOrNull ?? const ChatListState()).copyWith(chats: _sorted(chats)));
   }
 
   /// Clears the unread badge once the room is open.

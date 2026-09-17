@@ -1,0 +1,100 @@
+{
+  "artboards": [
+    {
+      "file": "Main.dc.html",
+      "x": 0,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "Test tanlanmagan — dark"
+    },
+    {
+      "file": "Ready.dc.html",
+      "x": 470,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "Boshlashga tayyor — dark"
+    },
+    {
+      "file": "NoQuiz.dc.html",
+      "x": 940,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "Testi yo‘q o‘quvchi"
+    },
+    {
+      "file": "MainLight.dc.html",
+      "x": 1410,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "Tayyor — light"
+    },
+    {
+      "file": "Tablet.dc.html",
+      "x": 0,
+      "y": 1000,
+      "w": 900,
+      "h": 720,
+      "title": "Planshet"
+    },
+    {
+      "file": "Centered.dc.html",
+      "x": 1000,
+      "y": 1000,
+      "w": 390,
+      "h": 844,
+      "title": "Markazda (dialog) — telefon"
+    },
+    {
+      "file": "CenteredTablet.dc.html",
+      "x": 0,
+      "y": 2000,
+      "w": 900,
+      "h": 720,
+      "title": "Markazda — planshet"
+    }
+  ],
+  "annotations": [
+    {
+      "id": "adapt",
+      "x": 1900,
+      "y": 0,
+      "w": 350,
+      "text": "WEBDAN NIMA O‘ZGARDI\n\n1. Markazdagi dialog o‘rniga pastdan chiqadigan sheet — ilovadagi hamma modal shunday.\n\n2. Test tanlash ichki dropdown emas. Qatorni bossangiz, musobaqa oqimida allaqachon ishlatiladigan test tanlash sheeti ochiladi: unda qidiruv bor va qatorlari 44 dp. Telefonda sheet ichidagi dropdown siqiq chiqadi.\n\n3. \"Bekor qilish\" tugmasi olib tashlandi. Sheetni dastagi, orqa fon va \"orqaga\" jesti yopadi — tizim o‘zi bajaradigan ishni takrorlaydigan tugma telefonda shovqin.\n\n4. Vaqt limiti dropdown emas, chiplar — ilovadagi hozirgi `showStartTestSheet` ham shunday. Sakkiztasi uch qatorga tushadi, lekin hammasi bir tegishda tanlanadi."
+    },
+    {
+      "id": "nomock",
+      "x": 1900,
+      "y": 560,
+      "w": 350,
+      "text": "QIYINLIK YORLIG‘I KO‘CHIRILMADI\n\nWebdagi ro‘yxatda har testda \"Oson / O‘rtacha / Qiyin\" yozuvi bor. U haqiqiy ma‘lumot emas — savollar sonidan hisoblanadi:\n\n  questionCount >= 30 ? 'Qiyin'\n  : >= 15 ? \"O‘rtacha\" : 'Oson'\n\n30 savolli oson test \"Qiyin\" deb chiqadi. `CLAUDE.md` mock UI ni ko‘chirishni taqiqlaydi, shuning uchun qatorlarda faqat haqiqiy ma‘lumot: fan va savollar soni."
+    },
+    {
+      "id": "star",
+      "x": 1900,
+      "y": 1040,
+      "w": 350,
+      "text": "TAVSIYA ETILGAN VAQT TESTGA BOG‘LIQ\n\n`QuizSummary.suggestedMinutes` — har savolga bir daqiqa, eng kami 10. Ya‘ni ★ test tanlangandan keyin paydo bo‘ladi va tanlangan testga qarab siljiydi; 10 savolli test uchun ★ 10 daqiqada turadi.\n\nShuning uchun test tanlanmaguncha chiplar o‘chiq: tanlashdan oldin tavsiya qilish uchun asos yo‘q."
+    },
+    {
+      "id": "entry",
+      "x": 940,
+      "y": 900,
+      "w": 350,
+      "text": "QAYERDAN OCHILADI\n\nHozir bosh sahifadagi \"Boshlash\" tugmasi `/tests` ro‘yxatiga o‘tadi: ro‘yxat → test → detal → \"Testni boshlash\" → vaqt sheeti. To‘rt qadam.\n\nEndi u shu sheetni ochadi — bir qadam.\n\nTest detali ekrani o‘z yo‘lini saqlaydi va xuddi shu sheetni testi oldindan tanlangan holda ochadi, ya‘ni bitta widget ikki joyga xizmat qiladi."
+    },
+    {
+      "id": "centered",
+      "x": 1900,
+      "y": 1560,
+      "w": 350,
+      "text": "MARKAZDA CHIQARISH — MUMKIN\n\nFlutter'da `showDialog` shu ishni qiladi, `showModalBattomSheet` o'rniga. Ikkala variant ham kanvada: pastdagi sheet va markazdagi dialog.\n\nErgashib keladigan uch narsa:\n\n1. Dialogda dastak (drag handle) yo'q, ya'ni yopish tugmasi qaytadi — webdagi × kabi. Kartada boshqa hech narsa qanday yopilishini aytmaydi.\n\n2. Dialog torroq: 390 dp ekranda 24 dp chekinish ikki tomondan olinadi, natijada sarlavha osti ikki qatorga bo'linadi va chiplar 3/3/2 bo'lib joylashadi (sheetda 3/4/1).\n\n3. Test tanlash ham dialogga aylanishi kerak. Hozir u pastdan chiqadigan sheet — dialog ustidan sheet chiqsa g'alati ko'rinadi.\n\nIlovadagi boshqa hamma modal (test tanlash, reyting, natija, do'st taklif qilish, xabar amallari) — sheet. `AlertDialog` faqat tasdiqlash uchun ishlatiladi. Material ham shunday maslahat beradi: tanlov va forma uchun sheet, qisqa tasdiqlash uchun dialog.\n\nWebga aynan o'xshashi kerak bo'lsa — markazdagi variant. Qaysi birini tanlaysiz?"
+    }
+  ],
+  "launch": {
+    "view": "canvas"
+  }
+}

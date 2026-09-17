@@ -9,9 +9,15 @@ import '../chat/presentation/chat_list_controller.dart';
 
 /// A bottom-nav / rail destination.
 class _Destination {
-  const _Destination(this.label, this.icon, this.selectedIcon);
+  const _Destination(this.label, this.icon, this.selectedIcon, {String? short})
+      : shortLabel = short ?? label;
 
   final String label;
+
+  /// Used by the phone bar, where six destinations leave about 56 dp each and
+  /// "Bosh sahifa" wrapped onto two lines. The rail keeps the full wording.
+  final String shortLabel;
+
   final IconData icon;
   final IconData selectedIcon;
 }
@@ -29,7 +35,12 @@ class StudentShell extends ConsumerWidget {
 
   /// Order must match the branches in `app_router.dart`.
   static const _destinations = [
-    _Destination('Bosh sahifa', Icons.space_dashboard_outlined, Icons.space_dashboard_rounded),
+    _Destination(
+      'Bosh sahifa',
+      Icons.space_dashboard_outlined,
+      Icons.space_dashboard_rounded,
+      short: 'Asosiy',
+    ),
     _Destination('Guruhlar', Icons.school_outlined, Icons.school_rounded),
     _Destination("Do'stlar", Icons.people_outline_rounded, Icons.people_rounded),
     _Destination('Suhbatlar', Icons.forum_outlined, Icons.forum_rounded),
@@ -46,9 +57,7 @@ class StudentShell extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     // Unread chats badge the Suhbatlar tab from anywhere in the app.
     final unread = ref.watch(chatUnreadTotalProvider);
-    return context.isTablet
-        ? _buildTablet(context, unread)
-        : _buildPhone(context, unread);
+    return context.isTablet ? _buildTablet(context, unread) : _buildPhone(context, unread);
   }
 
   /// Wraps a destination icon in a count badge (Suhbatlar only).
@@ -70,17 +79,23 @@ class StudentShell extends ConsumerWidget {
       body: navigationShell,
       bottomNavigationBar: DecoratedBox(
         decoration: BoxDecoration(border: Border(top: BorderSide(color: c.border))),
-        child: NavigationBar(
-          selectedIndex: navigationShell.currentIndex,
-          onDestinationSelected: _onSelect,
-          destinations: [
-            for (final (index, d) in _destinations.indexed)
-              NavigationDestination(
-                icon: _icon(index, d.icon, unread),
-                selectedIcon: _icon(index, d.selectedIcon, unread),
-                label: d.label,
-              ),
-          ],
+        // Six labels share the width, so they break onto a second line and
+        // collide once the reader raises the system font size. The rest of the
+        // app scales freely; only the bar is held back.
+        child: MediaQuery.withClampedTextScaling(
+          maxScaleFactor: 1.1,
+          child: NavigationBar(
+            selectedIndex: navigationShell.currentIndex,
+            onDestinationSelected: _onSelect,
+            destinations: [
+              for (final (index, d) in _destinations.indexed)
+                NavigationDestination(
+                  icon: _icon(index, d.icon, unread),
+                  selectedIcon: _icon(index, d.selectedIcon, unread),
+                  label: d.shortLabel,
+                ),
+            ],
+          ),
         ),
       ),
     );

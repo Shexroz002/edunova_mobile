@@ -254,7 +254,7 @@ class _FriendTileState extends ConsumerState<_FriendTile> {
               child: const Text(
                 "O'qituvchi",
                 style: TextStyle(
-                  fontSize: 11,
+                  fontSize: 12,
                   fontWeight: FontWeight.w700,
                   color: AppColors.warning,
                 ),

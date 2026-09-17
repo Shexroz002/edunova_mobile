@@ -193,7 +193,7 @@ class _HeaderCard extends StatelessWidget {
                 child: Text(
                   result.statusLabel,
                   style: const TextStyle(
-                    fontSize: 11,
+                    fontSize: 12,
                     fontWeight: FontWeight.w700,
                     color: AppColors.success,
                   ),
@@ -356,7 +356,7 @@ class _SummaryTile extends StatelessWidget {
                   label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 11, color: c.textMuted),
+                  style: TextStyle(fontSize: 12, color: c.textMuted),
                 ),
               ),
             ],
@@ -555,7 +555,7 @@ class _LegendItem extends StatelessWidget {
           decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(3)),
         ),
         const SizedBox(width: 6),
-        Text(label, style: TextStyle(fontSize: 11, color: context.colors.textMuted)),
+        Text(label, style: TextStyle(fontSize: 12, color: context.colors.textMuted)),
       ],
     );
   }
@@ -655,7 +655,7 @@ class _Cell extends StatelessWidget {
     final c = context.colors;
     return Column(
       children: [
-        Text(label, style: TextStyle(fontSize: 11, color: c.textMuted)),
+        Text(label, style: TextStyle(fontSize: 12, color: c.textMuted)),
         const SizedBox(height: 2),
         Text(
           value,

@@ -1,0 +1,34 @@
+{
+  "artboards": [
+    { "file": "Main.dc.html",         "x": 0,    "y": 0,    "w": 390, "h": 844, "title": "Jarayon — dark" },
+    { "file": "Retry.dc.html",        "x": 470,  "y": 0,    "w": 390, "h": 844, "title": "Qayta urinish — dark" },
+    { "file": "Success.dc.html",      "x": 940,  "y": 0,    "w": 390, "h": 844, "title": "Tayyor — dark" },
+    { "file": "Failure.dc.html",      "x": 1410, "y": 0,    "w": 390, "h": 844, "title": "Xatolik — dark" },
+    { "file": "MainLight.dc.html",    "x": 0,    "y": 1000, "w": 390, "h": 844, "title": "Jarayon (AI) — light" },
+    { "file": "FailureLight.dc.html", "x": 470,  "y": 1000, "w": 390, "h": 844, "title": "Xatolik — light" },
+    { "file": "Tablet.dc.html",       "x": 0,    "y": 2000, "w": 900, "h": 720, "title": "Planshet — dark" }
+  ],
+  "annotations": [
+    {
+      "id": "why",
+      "x": 1900, "y": 0, "w": 330,
+      "text": "NIMA O'ZGARDI\n\n1. Yalang'och foiz o'rniga 4 ta nomlangan bosqich. Bar 40 soniya qimirlamasa ham, o'quvchi qaysi bosqichda turganini ko'radi.\n\n2. job.message endi xom holda chiqmaydi — u provayder nomini oshkor qiladi (\"PDF Mistral serveriga yuklanmoqda\", \"AI provider tayyorlanmoqda: gemini\").\n\n3. Kontekst kartasi: qaysi fayl / qaysi mavzu ishlanayotgani ko'rinadi.\n\n4. O'tgan vaqt + kutilayotgan vaqt — muzlab qolgandek tuyulmaydi.\n\n5. Bo'sh ekran to'ldi: karta yuqorida, eslatma pastda."
+    },
+    {
+      "id": "mapping",
+      "x": 1900, "y": 430, "w": 330,
+      "text": "BOSQICH XARITASI (progress -> bosqich)\n\n0–14   1. Fayl tekshirildi / So'rov tayyorlandi\n15–49  2. AI ga yuborildi\n50–84  3. Savollar yaratilmoqda\n85–99  4. Testga saqlash\n100 + completed  Tayyor\n\nBackend haqiqatda shu foizlarni yuboradi:\nPDF 10, 15, 30, 50, 80, 85, 100\nAI  10, 50, 75, 80, 85, 100\n\nQayta urinish: 58 / 66 / 75 — bu oraliqda 3-bosqich ostida sariq eslatma chiqadi."
+    },
+    {
+      "id": "rules",
+      "x": 1900, "y": 900, "w": 330,
+      "text": "QOIDALAR\n\n- Provayder nomi (Mistral, Gemini, OpenAI) hech qachon ko'rinmaydi. Matnlar mijoz tomonida, foiz bo'yicha tanlanadi.\n- progress xatolikda ham 100 bo'ladi — muvaffaqiyatni faqat status == completed va quiz_id dan bilinadi.\n- job.error inglizcha va provayderni tilga oladi — ko'rsatilmaydi, faqat logga.\n- Ranglar: jarayon sky #38BDF8, tugagan emerald #34D399, qayta urinish warning #F59E0B, xato error. Light modeda matn uchun context.readable() twinlari (#0369A1, #047857, #B45309, #DC2626)."
+    },
+    {
+      "id": "open",
+      "x": 940, "y": 1000, "w": 330,
+      "text": "OCHIQ SAVOLLAR\n\n1. \"Nima qilish mumkin\" bloki — yangi matn. Kerakmi yoki olib tashlaymizmi?\n\n2. \"Boshqa usulni tanlash\" tugmasi 1-qadamga qaytaradi. Kerakmi?\n\n3. Jarayon serverda davom etadi, lekin ilova ekrandan chiqilsa uni yo'qotadi. \"Orqaga qaytish + keyin davom ettirish\" kerakmi? Bu alohida ish."
+    }
+  ],
+  "launch": { "view": "canvas" }
+}

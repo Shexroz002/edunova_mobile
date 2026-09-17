@@ -356,7 +356,7 @@ class _StatusDot extends StatelessWidget {
           const SizedBox(width: 5),
           Text(
             status.label,
-            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: status.color),
+            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: status.color),
           ),
         ],
       ),
@@ -386,7 +386,7 @@ class _GroupStat extends StatelessWidget {
             label,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(fontSize: 11, color: c.textMuted),
+            style: TextStyle(fontSize: 12, color: c.textMuted),
           ),
           const SizedBox(height: 3),
           Text(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -15,6 +16,11 @@ import 'widgets/auth_scaffold.dart';
 /// Two-step student registration: personal info → subjects (at least 2).
 ///
 /// The role is always `schoolboy`; teachers register on the web.
+///
+/// The form is built for a pupil on a phone: it asks for as little as it can,
+/// shapes the username while it is typed instead of rejecting it afterwards,
+/// and only turns red once — after that every field re-checks itself on each
+/// keystroke, so a fixed mistake clears immediately.
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
 
@@ -29,7 +35,15 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _lastName = TextEditingController();
   final _username = TextEditingController();
   final _password = TextEditingController();
-  final _confirm = TextEditingController();
+
+  /// Ordered the way the form reads, so a failed submit can land the caret on
+  /// the first thing that needs fixing instead of leaving the pupil to hunt.
+  late final _focus = <String, FocusNode>{
+    'first_name': FocusNode(),
+    'last_name': FocusNode(),
+    'username': FocusNode(),
+    'password': FocusNode(),
+  };
 
   int _step = 1;
   final Set<int> _selectedSubjects = {};
@@ -37,12 +51,35 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   String? _submitError;
   bool _loading = false;
 
+  /// True once "Keyingi" has been pressed. Before that the form stays quiet;
+  /// after it, every keystroke re-checks so a corrected field clears at once
+  /// instead of staying red until the next submit.
+  bool _attempted = false;
+
   @override
   void dispose() {
-    for (final c in [_firstName, _lastName, _username, _password, _confirm]) {
+    for (final c in [_firstName, _lastName, _username, _password]) {
       c.dispose();
     }
+    for (final node in _focus.values) {
+      node.dispose();
+    }
     super.dispose();
+  }
+
+  /// The username the server will actually store: it lowercases on its side,
+  /// so the field does the same and the pupil sees what they will get.
+  static final _usernameFormatters = <TextInputFormatter>[
+    FilteringTextInputFormatter.deny(RegExp(r'\s')),
+    // Length-preserving, so the caret never jumps.
+    TextInputFormatter.withFunction(
+      (_, next) => TextEditingValue(text: next.text.toLowerCase(), selection: next.selection),
+    ),
+  ];
+
+  /// Re-runs validation while the user types, but only after a failed attempt.
+  void _revalidate() {
+    if (_attempted) _validateStep1();
   }
 
   /// Mirrors web + backend rules: names 2..50, username 3..30 without spaces, password ≥ 8.
@@ -62,7 +99,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       errors['username'] = "3 tadan 30 tagacha belgi bo'lsin";
     }
     if (_password.text.length < 8) errors['password'] = "Kamida 8 ta belgi bo'lsin";
-    if (_confirm.text != _password.text) errors['confirm'] = 'Parollar mos kelmadi';
 
     setState(() => _errors = errors);
     return errors.isEmpty;
@@ -70,11 +106,20 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
   void _next() {
     FocusScope.of(context).unfocus();
+    setState(() => _attempted = true);
     if (_validateStep1()) {
       setState(() {
         _step = 2;
         _submitError = null;
       });
+      return;
+    }
+    // Point at the first problem rather than showing four and walking away.
+    for (final field in _focus.keys) {
+      if (_errors.containsKey(field)) {
+        _focus[field]!.requestFocus();
+        return;
+      }
     }
   }
 
@@ -144,26 +189,25 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           const SizedBox(height: 24),
           if (_step == 1)
             PrimaryButton(label: 'Keyingi', icon: Icons.arrow_forward_rounded, onPressed: _next)
-          else
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: _loading ? null : () => setState(() => _step = 1),
-                    child: const Text('Orqaga'),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  flex: 2,
-                  child: PrimaryButton(
-                    label: "Ro'yxatdan o'tish",
-                    loading: _loading,
-                    onPressed: _submit,
-                  ),
-                ),
-              ],
+          else ...[
+            PrimaryButton(
+              label: "Ro'yxatdan o'tish",
+              loading: _loading,
+              onPressed: _submit,
             ),
+            const SizedBox(height: 8),
+            Align(
+              child: TextButton.icon(
+                onPressed: _loading ? null : () => setState(() => _step = 1),
+                icon: const Icon(Icons.arrow_back_rounded, size: 18),
+                label: const Text('Orqaga', maxLines: 1),
+                style: TextButton.styleFrom(
+                  foregroundColor: context.colors.textSecondary,
+                  minimumSize: const Size(0, 44),
+                ),
+              ),
+            ),
+          ],
           const SizedBox(height: 20),
           Wrap(
             alignment: WrapAlignment.center,
@@ -197,9 +241,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 label: 'Ism',
                 hint: 'Ismingiz',
                 controller: _firstName,
+                focusNode: _focus['first_name'],
                 errorText: _errors['first_name'],
                 textInputAction: TextInputAction.next,
                 autofillHints: const [AutofillHints.givenName],
+                onChanged: (_) => _revalidate(),
               ),
             ),
             const SizedBox(width: 12),
@@ -208,9 +254,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 label: 'Familiya',
                 hint: 'Familiyangiz',
                 controller: _lastName,
+                focusNode: _focus['last_name'],
                 errorText: _errors['last_name'],
                 textInputAction: TextInputAction.next,
                 autofillHints: const [AutofillHints.familyName],
+                onChanged: (_) => _revalidate(),
               ),
             ),
           ],
@@ -218,35 +266,39 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         const SizedBox(height: 16),
         AppTextField(
           label: 'Foydalanuvchi nomi',
-          hint: 'username',
+          hint: 'masalan: ali_valiyev',
           icon: Icons.alternate_email_rounded,
           controller: _username,
+          focusNode: _focus['username'],
           errorText: _errors['username'],
           textInputAction: TextInputAction.next,
           autofillHints: const [AutofillHints.newUsername],
+          inputFormatters: _usernameFormatters,
+          onChanged: (_) => _revalidate(),
         ),
+        if (_errors['username'] == null)
+          const _FieldHint('Kirish uchun ishlatasiz. Kichik harf, raqam va _ belgisi.'),
         const SizedBox(height: 16),
         AppTextField(
           label: 'Parol',
           hint: 'Kamida 8 belgi',
           icon: Icons.lock_outline_rounded,
           controller: _password,
+          focusNode: _focus['password'],
           isPassword: true,
           errorText: _errors['password'],
-          textInputAction: TextInputAction.next,
-          autofillHints: const [AutofillHints.newPassword],
-        ),
-        const SizedBox(height: 16),
-        AppTextField(
-          label: 'Parolni tasdiqlang',
-          hint: 'Parolni qayta kiriting',
-          icon: Icons.lock_outline_rounded,
-          controller: _confirm,
-          isPassword: true,
-          errorText: _errors['confirm'],
           textInputAction: TextInputAction.done,
+          autofillHints: const [AutofillHints.newPassword],
+          onChanged: (_) => setState(_revalidate),
           onSubmitted: (_) => _next(),
         ),
+        if (_errors['password'] == null)
+          _FieldHint(
+            _password.text.length >= 8
+                ? "Parol yetarli uzunlikda"
+                : "Kamida 8 ta belgi — ko'zcha bilan tekshirib oling",
+            ok: _password.text.length >= 8,
+          ),
       ],
     );
   }
@@ -264,10 +316,15 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           style: TextStyle(color: c.textSecondary, fontSize: 13),
         ),
         const SizedBox(height: 6),
+        // Green only once the minimum is met: "0 ta tanlandi" in success green
+        // read as if the step were already done.
         Text(
-          '${_selectedSubjects.length} ta tanlandi',
-          style:
-              const TextStyle(color: AppColors.success, fontSize: 12, fontWeight: FontWeight.w700),
+          '${_selectedSubjects.length} / $_minSubjects ta tanlandi',
+          style: TextStyle(
+            color: _selectedSubjects.length >= _minSubjects ? AppColors.success : c.textMuted,
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+          ),
         ),
         const SizedBox(height: 14),
         subjects.when(
@@ -304,6 +361,45 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   }
 }
 
+/// Guidance under a field — shown instead of an error, never beside one.
+class _FieldHint extends StatelessWidget {
+  const _FieldHint(this.text, {this.ok = false});
+
+  final String text;
+
+  /// Turns the line green once the rule it describes is satisfied.
+  final bool ok;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return Padding(
+      padding: const EdgeInsets.only(top: 6, left: 2),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            ok ? Icons.check_circle_rounded : Icons.info_outline_rounded,
+            size: 13,
+            color: ok ? AppColors.success : c.textMuted,
+          ),
+          const SizedBox(width: 5),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                fontSize: 11.5,
+                height: 1.35,
+                color: ok ? AppColors.success : c.textMuted,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _SubjectChip extends StatelessWidget {
   const _SubjectChip({required this.subject, required this.selected, required this.onTap});
 
@@ -327,7 +423,8 @@ class _SubjectChip extends StatelessWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
         onTap: onTap,
-        child: Padding(
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 44),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -336,12 +433,17 @@ class _SubjectChip extends StatelessWidget {
                 Text(emoji, style: const TextStyle(fontSize: 16)),
                 const SizedBox(width: 6)
               ],
-              Text(
-                subject.displayName,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: selected ? AppColors.success : c.textPrimary,
+              // "Ona tili va adabiyoti" is wider than a phone row on its own.
+              Flexible(
+                child: Text(
+                  subject.displayName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: selected ? AppColors.success : c.textPrimary,
+                  ),
                 ),
               ),
               if (selected) ...[
@@ -361,7 +463,7 @@ class _StepIndicator extends StatelessWidget {
 
   final int current;
 
-  static const _labels = ["Shaxsiy ma'lumotlar", 'Fanlar'];
+  static const _labels = ["Ma'lumotlar", 'Fanlar'];
 
   @override
   Widget build(BuildContext context) {
@@ -377,7 +479,13 @@ class _StepIndicator extends StatelessWidget {
                 color: current > i ? AppColors.brand : c.border,
               ),
             ),
-          _StepDot(index: i + 1, label: _labels[i], current: current),
+          Flexible(
+            child: _StepDot(
+              index: i + 1,
+              label: i + 1 == current ? _labels[i] : null,
+              current: current,
+            ),
+          ),
         ],
       ],
     );
@@ -388,7 +496,9 @@ class _StepDot extends StatelessWidget {
   const _StepDot({required this.index, required this.label, required this.current});
 
   final int index;
-  final String label;
+
+  /// Shown for the current step only, so the row fits at any text scale.
+  final String? label;
   final int current;
 
   @override
@@ -420,15 +530,21 @@ class _StepDot extends StatelessWidget {
                   ),
                 ),
         ),
-        const SizedBox(width: 8),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: active ? FontWeight.w700 : FontWeight.w500,
-            color: active ? c.textPrimary : c.textMuted,
+        if (label != null) ...[
+          const SizedBox(width: 8),
+          Flexible(
+            child: Text(
+              label!,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+                color: active ? c.textPrimary : c.textMuted,
+              ),
+            ),
           ),
-        ),
+        ],
       ],
     );
   }

@@ -66,8 +66,7 @@ class _MessageActionsSheet extends StatelessWidget {
             _ReactionBar(
               message: message,
               currentUserId: currentUserId,
-              onPick: (emoji) =>
-                  Navigator.of(context).pop(MessageActionResult.reaction(emoji)),
+              onPick: (emoji) => Navigator.of(context).pop(MessageActionResult.reaction(emoji)),
             ),
             const SizedBox(height: 10),
             Container(
@@ -82,8 +81,8 @@ class _MessageActionsSheet extends StatelessWidget {
                   _ActionRow(
                     icon: Icons.reply_rounded,
                     label: 'Javob berish',
-                    onTap: () =>
-                        Navigator.of(context).pop(const MessageActionResult.action(MessageAction.reply)),
+                    onTap: () => Navigator.of(context)
+                        .pop(const MessageActionResult.action(MessageAction.reply)),
                   ),
                   if (isOwn && message.hasText)
                     _ActionRow(
@@ -169,8 +168,8 @@ class _ReactionBar extends StatelessWidget {
     );
   }
 
-  bool _reactedWith(String emoji) => message.reactions
-      .any((r) => r.emoji == emoji && r.reactedBy(currentUserId));
+  bool _reactedWith(String emoji) =>
+      message.reactions.any((r) => r.emoji == emoji && r.reactedBy(currentUserId));
 }
 
 /// One row of the action list.

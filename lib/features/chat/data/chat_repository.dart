@@ -20,17 +20,29 @@ class ChatLimits {
   /// `ALLOWED_CONTENT_TYPES` in `app/services/chat/attachment_service.py`.
   /// SVG and HTML are deliberately absent on the server.
   static const allowedMimeTypes = <String>{
-    'image/jpeg', 'image/png', 'image/gif', 'image/webp',
-    'application/pdf', 'application/msword',
+    'image/jpeg',
+    'image/png',
+    'image/gif',
+    'image/webp',
+    'application/pdf',
+    'application/msword',
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     'application/vnd.ms-excel',
     'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     'application/vnd.ms-powerpoint',
     'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-    'text/plain', 'text/csv',
-    'audio/mpeg', 'audio/ogg', 'audio/wav', 'audio/mp4',
-    'video/mp4', 'video/webm', 'video/quicktime',
-    'application/zip', 'application/x-7z-compressed', 'application/vnd.rar',
+    'text/plain',
+    'text/csv',
+    'audio/mpeg',
+    'audio/ogg',
+    'audio/wav',
+    'audio/mp4',
+    'video/mp4',
+    'video/webm',
+    'video/quicktime',
+    'application/zip',
+    'application/x-7z-compressed',
+    'application/vnd.rar',
   };
 }
 

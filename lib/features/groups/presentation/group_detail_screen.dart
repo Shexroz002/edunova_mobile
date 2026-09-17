@@ -278,7 +278,7 @@ class _MetricBox extends StatelessWidget {
                   label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 11, color: c.textMuted),
+                  style: TextStyle(fontSize: 12, color: c.textMuted),
                 ),
                 const SizedBox(height: 1),
                 Text(
@@ -617,7 +617,7 @@ class _StudentRow extends StatelessWidget {
                           child: Text(
                             formatPercent(student.averageScore),
                             style: TextStyle(
-                              fontSize: 11,
+                              fontSize: 12,
                               fontWeight: FontWeight.w800,
                               color: band.color,
                             ),
