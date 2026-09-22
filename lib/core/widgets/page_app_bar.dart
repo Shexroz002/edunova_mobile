@@ -1,18 +1,22 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
-import '../providers.dart';
+import '../router/app_router.dart';
 import '../theme/app_colors.dart';
 import 'header_button.dart';
 
-/// Flat app bar used by all tab pages: page background, no tint,
-/// bold title and a light/dark toggle on the right.
-class PageAppBar extends ConsumerWidget implements PreferredSizeWidget {
+/// Flat app bar used by all tab pages: page background, no tint, bold title and
+/// a shortcut to Do'stlar on the right.
+///
+/// That slot held the light/dark toggle until Do'stlar stopped being a tab.
+/// The toggle itself is not lost — Profil has carried the same switch all
+/// along, which is where the setting belongs.
+class PageAppBar extends StatelessWidget implements PreferredSizeWidget {
   const PageAppBar({
     super.key,
     required this.title,
     this.actions = const [],
-    this.showThemeToggle = true,
+    this.showFriends = true,
     this.leading,
   });
 
@@ -21,15 +25,16 @@ class PageAppBar extends ConsumerWidget implements PreferredSizeWidget {
   /// Replaces the automatic back button, e.g. to intercept a wizard step.
   final Widget? leading;
   final List<Widget> actions;
-  final bool showThemeToggle;
+
+  /// Off wherever the theme toggle was already off, and on Do'stlar itself.
+  final bool showFriends;
 
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final c = context.colors;
-    final isDark = context.isDark;
 
     return AppBar(
       // The web's mobile header sits on the card surface with a hairline under
@@ -46,20 +51,14 @@ class PageAppBar extends ConsumerWidget implements PreferredSizeWidget {
       titleTextStyle: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: c.textPrimary),
       title: title,
       actions: [
-        if (showThemeToggle) ...[
-          // The web puts the theme toggle first, then the bell.
-          // Amber tile with an indigo moon in light mode, indigo tile with an
-          // amber sun in dark — exactly how the web flips it.
+        if (showFriends) ...[
           HeaderButton(
-            tooltip: 'Mavzuni almashtirish',
-            onTap: ref.read(themeModeProvider.notifier).toggle,
-            icon: isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
-            background: AppColors.tint(
-              isDark ? AppColors.brand : AppColors.warning,
-              isDark ? 0x1F : 0x1A,
-            ),
-            border: AppColors.tint(isDark ? AppColors.brand : AppColors.warning, 0x4D),
-            iconColor: isDark ? const Color(0xFFFBBF24) : AppColors.brand,
+            tooltip: "Do'stlar",
+            onTap: () => context.push(Routes.friends),
+            icon: Icons.people_alt_rounded,
+            background: AppColors.tint(AppColors.brand, context.isDark ? 0x1F : 0x1A),
+            border: AppColors.tint(AppColors.brand, 0x4D),
+            iconColor: context.readable(AppColors.brand),
           ),
           const SizedBox(width: 8),
         ],

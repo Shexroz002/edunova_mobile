@@ -192,7 +192,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
         if (leave && context.mounted) _close();
       },
       child: Scaffold(
-        appBar: const PageAppBar(title: Text('Profilni tahrirlash'), showThemeToggle: false),
+        appBar: const PageAppBar(title: Text('Profilni tahrirlash'), showFriends: false),
         // A full-screen route has no bottom bar of its own, so without this
         // the last action sits under the system navigation bar.
         body: SafeArea(

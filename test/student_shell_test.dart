@@ -1,8 +1,6 @@
 import 'package:edunova_mobile/core/theme/app_theme.dart';
-import 'package:edunova_mobile/features/chat/presentation/chat_list_controller.dart';
 import 'package:edunova_mobile/features/shell/student_shell.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
@@ -11,8 +9,7 @@ import 'package:go_router/go_router.dart';
 /// The rail regression comes from a real device: rotating a 360 dp phone to
 /// landscape makes it 820×360 dp, which is wide enough (≥ 600) to switch to the
 /// rail but too short for the brand plus the labelled destinations. Before the
-/// fix that overflowed by 73 px on a Redmi 2409BRN2CY. Suhbatlar made it six
-/// destinations, so the short-viewport case matters more than before.
+/// fix that overflowed by 73 px on a Redmi 2409BRN2CY.
 void main() {
   /// Minimal router that renders [StudentShell] over one stub branch per tab.
   GoRouter buildRouter() => GoRouter(
@@ -21,14 +18,7 @@ void main() {
           StatefulShellRoute.indexedStack(
             builder: (_, __, shell) => StudentShell(navigationShell: shell),
             branches: [
-              for (final path in [
-                '/home',
-                '/groups',
-                '/friends',
-                '/chats',
-                '/statistics',
-                '/profile',
-              ])
+              for (final path in ['/home', '/statistics', '/profile'])
                 StatefulShellBranch(
                   routes: [
                     GoRoute(path: path, builder: (_, __) => Center(child: Text('page $path')))
@@ -39,51 +29,46 @@ void main() {
         ],
       );
 
-  Future<void> pumpAt(WidgetTester tester, Size size, {int unread = 0}) async {
+  Future<void> pumpAt(WidgetTester tester, Size size, {double textScale = 1.0}) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.reset);
 
     await tester.pumpWidget(
-      ProviderScope(
-        // The shell badges the Suhbatlar tab from the chat list; these layout
-        // tests stub the count so they need no socket or network.
-        overrides: [chatUnreadTotalProvider.overrideWithValue(unread)],
-        child: MaterialApp.router(theme: AppTheme.dark(), routerConfig: buildRouter()),
+      MaterialApp.router(
+        theme: AppTheme.dark(),
+        routerConfig: buildRouter(),
+        builder: (context, child) => MediaQuery.withClampedTextScaling(
+          minScaleFactor: textScale,
+          maxScaleFactor: textScale,
+          child: child!,
+        ),
       ),
     );
     await tester.pumpAndSettle();
   }
 
-  testWidgets('phone portrait uses the bottom bar with all six tabs', (tester) async {
+  testWidgets('the phone bar carries three tabs, not six', (tester) async {
     await pumpAt(tester, const Size(360, 820));
 
     expect(find.byType(NavigationBar), findsOneWidget);
     expect(find.byType(NavigationRail), findsNothing);
 
-    // Six destinations leave about 60 dp each, where "Bosh sahifa" wrapped onto
-    // a second line and collided with the label beside it. The phone bar uses a
-    // short label; the rail, which has room, keeps the full wording.
-    const labels = ['Asosiy', 'Guruhlar', "Do'stlar", 'Suhbatlar', 'Statistika', 'Profil'];
-    for (final label in labels) {
-      expect(find.text(label), findsOneWidget);
+    for (final label in ['Asosiy', 'Statistika', 'Profil']) {
+      expect(find.text(label), findsOneWidget, reason: label);
     }
-    expect(find.text('Bosh sahifa'), findsNothing);
-
-    expect(tester.takeException(), isNull, reason: 'six tabs must still fit the bar');
+    // Moved out of the bar: Do'stlar to the header button, the other two to
+    // full-screen pages.
+    for (final gone in ['Guruhlar', "Do'stlar", 'Suhbatlar', 'Bosh sahifa']) {
+      expect(find.text(gone), findsNothing, reason: gone);
+    }
   });
 
-  testWidgets('unread chats badge the Suhbatlar tab', (tester) async {
-    await pumpAt(tester, const Size(360, 820), unread: 7);
-    expect(find.widgetWithText(Badge, '7'), findsOneWidget);
-
-    await pumpAt(tester, const Size(360, 820), unread: 0);
-    expect(find.byType(Badge), findsNothing);
-  });
-
-  testWidgets('a count over 99 is capped', (tester) async {
-    await pumpAt(tester, const Size(360, 820), unread: 250);
-    expect(find.widgetWithText(Badge, '99+'), findsOneWidget);
+  testWidgets('three labels have room to scale, where six did not', (tester) async {
+    // The bar used to be clamped to 1.1 because six labels collided; the rest
+    // of the app scales freely and now so does the bar.
+    await pumpAt(tester, const Size(360, 820), textScale: 1.5);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('landscape phone switches to the rail without overflowing', (tester) async {
@@ -108,7 +93,6 @@ void main() {
     );
     expect(scrollable, findsWidgets, reason: 'the rail must be scrollable when it does not fit');
 
-    // The last destination starts off-screen; scrolling must reach it.
     await tester.scrollUntilVisible(find.text('Profil').first, 80, scrollable: scrollable.first);
     expect(find.text('Profil'), findsWidgets);
     expect(tester.takeException(), isNull);

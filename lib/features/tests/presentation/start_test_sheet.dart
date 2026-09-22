@@ -23,13 +23,20 @@ const kTestTimeOptions = [10, 15, 20, 30, 45, 60, 90, 120];
 /// Pass [quiz] when the caller already has one — the quiz detail and the test
 /// list both do. From the home hero it is null, and the sheet asks: that used
 /// to be four screens (list → quiz → detail → time sheet) for one intention.
-Future<int?> showStartTestSheet(BuildContext context, {QuizSummary? quiz}) {
+///
+/// Pass [subject] instead when the caller knows the subject but not the quiz,
+/// as a home subject row does; the picker then opens already narrowed to it.
+Future<int?> showStartTestSheet(
+  BuildContext context, {
+  QuizSummary? quiz,
+  String? subject,
+}) {
   return showModalBottomSheet<int>(
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
     backgroundColor: context.colors.bgCard,
-    builder: (_) => _StartTestSheet(quiz: quiz),
+    builder: (_) => _StartTestSheet(quiz: quiz, subject: subject),
   );
 }
 
@@ -43,9 +50,10 @@ final _hasQuizzesProvider = FutureProvider.autoDispose<bool>((ref) async {
 });
 
 class _StartTestSheet extends ConsumerStatefulWidget {
-  const _StartTestSheet({this.quiz});
+  const _StartTestSheet({this.quiz, this.subject});
 
   final QuizSummary? quiz;
+  final String? subject;
 
   @override
   ConsumerState<_StartTestSheet> createState() => _StartTestSheetState();
@@ -54,6 +62,10 @@ class _StartTestSheet extends ConsumerStatefulWidget {
 class _StartTestSheetState extends ConsumerState<_StartTestSheet> {
   QuizSummary? _quiz;
   int? _minutes;
+
+  /// Vaqt limitisiz rejim: server deadline qo'ymaydi va o'quvchi testni
+  /// xohlagan vaqtida davom ettira oladi.
+  bool _untimed = false;
   bool _starting = false;
   String? _error;
 
@@ -76,7 +88,8 @@ class _StartTestSheetState extends ConsumerState<_StartTestSheet> {
   }
 
   Future<void> _pickQuiz() async {
-    final picked = await showQuizPickerSheet(context, selected: _quiz);
+    final picked =
+        await showQuizPickerSheet(context, selected: _quiz, subject: widget.subject);
     if (picked == null || !mounted) return;
     setState(() {
       _quiz = picked;
@@ -88,18 +101,30 @@ class _StartTestSheetState extends ConsumerState<_StartTestSheet> {
 
   Future<void> _start() async {
     final quiz = _quiz;
-    final minutes = _minutes;
-    if (quiz == null || minutes == null) return;
+    final minutes = _untimed ? null : _minutes;
+    if (quiz == null || (!_untimed && minutes == null)) return;
 
     setState(() {
       _starting = true;
       _error = null;
     });
+    // Olindi, chunki sheet yopilgach context ishlamay qoladi.
+    final messenger = ScaffoldMessenger.of(context);
     try {
-      final sessionId = await ref
+      final started = await ref
           .read(sessionRepositoryProvider)
           .startSinglePlayer(quizId: quiz.id, minutes: minutes);
-      if (mounted) Navigator.of(context).pop(sessionId);
+      if (!mounted) return;
+      Navigator.of(context).pop(started.sessionId);
+      if (started.resumed) {
+        // Tanlangan vaqt e'tiborga olinmadi: o'quvchi eski sessiyasiga
+        // qaytdi. Buni aytmasak, taymer "noto'g'ri" ko'rinadi.
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text("Tugallanmagan testingiz o'sha joyidan davom ettirildi."),
+          ),
+        );
+      }
     } on ApiException catch (e) {
       if (mounted) setState(() => _error = e.message);
     } finally {
@@ -133,24 +158,36 @@ class _StartTestSheetState extends ConsumerState<_StartTestSheet> {
             if (empty)
               const _NoQuiz()
             else
-              _QuizRow(quiz: quiz, onTap: _starting ? null : _pickQuiz),
+              _QuizRow(
+                quiz: quiz,
+                subject: widget.subject,
+                onTap: _starting ? null : _pickQuiz,
+              ),
             if (!empty) ...[
               const SizedBox(height: 18),
               const _Label('Vaqt limiti'),
               const SizedBox(height: 8),
               _TimeChips(
                 selected: _minutes,
+                untimed: _untimed,
                 recommended: _recommended,
                 enabled: quiz != null && !_starting,
-                onChanged: (value) => setState(() => _minutes = value),
+                onChanged: (value) => setState(() {
+                  _untimed = value == null;
+                  if (value != null) _minutes = value;
+                }),
               ),
               const SizedBox(height: 12),
               _Hint(
-                text: quiz == null
-                    ? 'Test tanlangach tavsiya etilgan vaqt ★ bilan belgilanadi. '
-                        'Vaqt tugaganda test avtomatik yakunlanadi.'
-                    : 'Savollar soniga qarab ${formatMinutes(_recommended!)} tavsiya '
-                        'etiladi. Vaqt tugaganda test avtomatik yakunlanadi.',
+                untimed: _untimed,
+                text: _untimed
+                    ? 'Vaqt hisoblanmaydi. Testni to\'xtatib, keyin xohlagan '
+                        "vaqtingizda o'sha joyidan davom ettirasiz."
+                    : quiz == null
+                        ? 'Test tanlangach tavsiya etilgan vaqt ★ bilan belgilanadi. '
+                            'Vaqt tugaganda test avtomatik yakunlanadi.'
+                        : 'Savollar soniga qarab ${formatMinutes(_recommended!)} tavsiya '
+                            'etiladi. Vaqt tugaganda test avtomatik yakunlanadi.',
               ),
             ],
             if (_error != null) ...[
@@ -244,10 +281,13 @@ class _Label extends StatelessWidget {
 
 /// Opens the shared quiz picker; shows the choice once it is made.
 class _QuizRow extends StatelessWidget {
-  const _QuizRow({required this.quiz, required this.onTap});
+  const _QuizRow({required this.quiz, required this.onTap, this.subject});
 
   final QuizSummary? quiz;
   final VoidCallback? onTap;
+
+  /// Named in the placeholder when the caller came in with a subject.
+  final String? subject;
 
   @override
   Widget build(BuildContext context) {
@@ -291,7 +331,11 @@ class _QuizRow extends StatelessWidget {
               Expanded(
                 child: chosen == null
                     ? Text(
-                        'Testni tanlang...',
+                        subject == null
+                            ? 'Testni tanlang...'
+                            : '${SubjectStyle.displayName(subject)} bo‘yicha test tanlang...',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: TextStyle(fontSize: 14, color: c.textMuted),
                       )
                     : Column(
@@ -332,15 +376,21 @@ class _QuizRow extends StatelessWidget {
 class _TimeChips extends StatelessWidget {
   const _TimeChips({
     required this.selected,
+    required this.untimed,
     required this.recommended,
     required this.enabled,
     required this.onChanged,
   });
 
   final int? selected;
+
+  /// The "no limit" chip is picked, so [selected] is not the live choice.
+  final bool untimed;
   final int? recommended;
   final bool enabled;
-  final ValueChanged<int> onChanged;
+
+  /// `null` means the untimed chip: the session is started with no duration.
+  final ValueChanged<int?> onChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -354,9 +404,18 @@ class _TimeChips extends StatelessWidget {
         spacing: 8,
         runSpacing: 8,
         children: [
+          // Boshida turadi: bu daqiqalar qatoridagi yana bir qiymat emas,
+          // butunlay boshqa rejim.
+          _Chip(
+            label: 'Vaqtsiz',
+            icon: Icons.all_inclusive_rounded,
+            active: untimed && enabled,
+            enabled: enabled,
+            onTap: () => onChanged(null),
+          ),
           for (final option in kTestTimeOptions)
             Material(
-              color: option == selected && enabled
+              color: option == selected && !untimed && enabled
                   ? AppColors.tint(brand, 0x29)
                   : Colors.transparent,
               borderRadius: BorderRadius.circular(999),
@@ -369,7 +428,7 @@ class _TimeChips extends StatelessWidget {
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(999),
                     border: Border.all(
-                      color: option == selected && enabled
+                      color: option == selected && !untimed && enabled
                           ? AppColors.tint(brand, 0x8C)
                           : c.border,
                     ),
@@ -379,7 +438,7 @@ class _TimeChips extends StatelessWidget {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        if (option == recommended && enabled) ...[
+                        if (option == recommended && !untimed && enabled) ...[
                           Icon(Icons.star_rounded, size: 14, color: star),
                           const SizedBox(width: 5),
                         ],
@@ -388,7 +447,9 @@ class _TimeChips extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 12.5,
                             fontWeight: FontWeight.w700,
-                            color: option == selected && enabled ? brand : c.textSecondary,
+                            color: option == selected && !untimed && enabled
+                                ? brand
+                                : c.textSecondary,
                           ),
                         ),
                       ],
@@ -403,10 +464,69 @@ class _TimeChips extends StatelessWidget {
   }
 }
 
+/// A pill in the time picker that is not a number of minutes.
+class _Chip extends StatelessWidget {
+  const _Chip({
+    required this.label,
+    required this.icon,
+    required this.active,
+    required this.enabled,
+    required this.onTap,
+  });
+
+  final String label;
+  final IconData icon;
+  final bool active;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    final brand = context.readable(AppColors.brand);
+
+    return Material(
+      color: active ? AppColors.tint(brand, 0x29) : Colors.transparent,
+      borderRadius: BorderRadius.circular(999),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: enabled ? onTap : null,
+        child: Container(
+          height: 40,
+          padding: const EdgeInsets.symmetric(horizontal: 13),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: active ? AppColors.tint(brand, 0x8C) : c.border),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 14, color: active ? brand : c.textSecondary),
+              const SizedBox(width: 5),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w700,
+                  color: active ? brand : c.textSecondary,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _Hint extends StatelessWidget {
-  const _Hint({required this.text});
+  const _Hint({required this.text, this.untimed = false});
 
   final String text;
+
+  /// Swaps the clock for the no-limit mark, so the icon does not contradict
+  /// the sentence next to it.
+  final bool untimed;
 
   @override
   Widget build(BuildContext context) {
@@ -417,7 +537,11 @@ class _Hint extends StatelessWidget {
       children: [
         Padding(
           padding: const EdgeInsets.only(top: 1),
-          child: Icon(Icons.schedule_rounded, size: 15, color: c.textMuted),
+          child: Icon(
+            untimed ? Icons.all_inclusive_rounded : Icons.schedule_rounded,
+            size: 15,
+            color: c.textMuted,
+          ),
         ),
         const SizedBox(width: 9),
         Expanded(

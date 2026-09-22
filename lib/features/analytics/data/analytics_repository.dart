@@ -56,8 +56,10 @@ final recommendationProvider = FutureProvider.autoDispose<Recommendation>(
   (ref) => ref.watch(analyticsRepositoryProvider).fetchRecommendation(),
 );
 
-/// Sessions started per day over the last week, from the session history.
+/// Sessions per day over the last week, split by whether they were finished.
 final weeklyActivityProvider = FutureProvider.autoDispose<List<DailyActivity>>((ref) async {
   final history = await ref.watch(sessionRepositoryProvider).fetchAllHistory(maxItems: 200);
-  return DailyActivity.lastWeek(history.map((item) => item.createdAt));
+  return DailyActivity.lastWeek([
+    for (final item in history) (startedAt: item.createdAt, finished: item.isComplete),
+  ]);
 });

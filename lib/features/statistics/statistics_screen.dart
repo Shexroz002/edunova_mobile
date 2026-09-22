@@ -1,4 +1,3 @@
-import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -6,156 +5,176 @@ import 'package:go_router/go_router.dart';
 import '../../core/network/api_exception.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/formatters.dart';
+import '../../core/utils/subject_style.dart';
 import '../../core/widgets/app_card.dart';
 import '../../core/widgets/page_app_bar.dart';
 import '../../core/widgets/responsive.dart';
+import '../../core/widgets/state_views.dart';
 import '../analytics/data/analytics_repository.dart';
 import '../analytics/domain/analytics_models.dart';
+import '../analytics/presentation/subject_list.dart';
+import '../tests/presentation/start_test_sheet.dart';
+import 'widgets/advice_block.dart';
+import 'widgets/weekly_chart.dart';
 
-/// Student statistics, laid out like the web `StudentStatisticsPage.tsx`:
-/// stat cards, a weekly activity chart, per-subject results and the study
-/// advice.
+/// Student statistics: the three totals, the week, the subjects and the advice.
 ///
 /// Two of the web's numbers are invented: `Jami XP` is `sessions × 39`, and the
 /// weekly chart is the literal array `[4,7,3,8,5,2,6]`. The XP card is dropped
 /// and the chart is computed from the session history instead
 /// (`CLAUDE.md` default decisions 1 and 3).
+///
+/// The page used to state each fact several times — a subject's score as
+/// `✓59% ✗41%`, a two-tone bar and "22 to'g'ri · 15 xato · 37 jami javob" — and
+/// nothing on it could be acted on: it named the weakest subject and left the
+/// student to go back to the home page to practise it. Now every subject row
+/// starts a test in its own subject, as on the home page.
 class StatisticsScreen extends ConsumerWidget {
   const StatisticsScreen({super.key});
 
+  /// Opens the start sheet filtered to [subject], then the play screen.
+  static Future<void> _practise(BuildContext context, String subject) async {
+    final sessionId = await showStartTestSheet(context, subject: subject);
+    if (sessionId != null && context.mounted) context.push('/session/$sessionId/play');
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final c = context.colors;
+    final subjects = ref.watch(subjectStatsProvider);
+    final rows = SubjectList.ordered(subjects.valueOrNull ?? const []);
+    final blank = subjects.hasValue && rows.isEmpty;
 
     return Scaffold(
       appBar: const PageAppBar(title: Text('Statistika')),
-      body: RefreshIndicator(
-        onRefresh: () async {
-          ref.invalidate(overallStatsProvider);
-          ref.invalidate(subjectStatsProvider);
-          ref.invalidate(recommendationProvider);
-          ref.invalidate(weeklyActivityProvider);
-        },
-        child: ListView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: EdgeInsets.fromLTRB(context.pagePadding, 0, context.pagePadding, 28),
-          children: [
-            ContentConstraint(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    "O'z natijalaringizni kuzating",
-                    style: TextStyle(fontSize: 13, color: c.textMuted),
+      body: SafeArea(
+        top: false,
+        child: RefreshIndicator(
+          onRefresh: () async {
+            ref.invalidate(overallStatsProvider);
+            ref.invalidate(subjectStatsProvider);
+            ref.invalidate(recommendationProvider);
+            ref.invalidate(weeklyActivityProvider);
+          },
+          child: blank
+              ? const _Blank()
+              : ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: EdgeInsets.fromLTRB(
+                    context.pagePadding,
+                    12,
+                    context.pagePadding,
+                    28,
                   ),
-                  const SizedBox(height: 14),
-                  const _StatCards(),
-                  const SizedBox(height: 16),
-                  const _WeeklyChart(),
-                  const SizedBox(height: 16),
-                  const _SubjectResults(),
-                  const SizedBox(height: 16),
-                  const _RecommendationCard(),
-                ],
-              ),
-            ),
-          ],
+                  children: [
+                    ContentConstraint(
+                      maxWidth: 760,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          const _Totals(),
+                          const SizedBox(height: 10),
+                          const _Week(),
+                          const SizedBox(height: 10),
+                          _Subjects(subjects: subjects, rows: rows),
+                          const SizedBox(height: 10),
+                          _Advice(weakest: rows.isEmpty ? null : rows.first.subject),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
         ),
       ),
     );
   }
 }
 
-/// Three real cards; the web's fourth is fabricated XP.
-class _StatCards extends ConsumerWidget {
-  const _StatCards();
+/// The three real numbers from `analytics/overall/cards`.
+class _Totals extends ConsumerWidget {
+  const _Totals();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final stats = ref.watch(overallStatsProvider);
     final value = stats.valueOrNull ?? OverallStats.empty;
+    final loading = stats.isLoading;
 
-    return Row(
-      children: [
-        Expanded(
-          child: _StatCard(
-            icon: Icons.check_circle_outline_rounded,
-            value: '${value.totalSessions}',
-            label: 'Jami testlar',
-            color: AppColors.brandLight,
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(
+            child: _Tile(
+              value: formatPercent(value.averagePercent),
+              label: "O‘rtacha ball",
+              loading: loading,
+            ),
           ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: _StatCard(
-            icon: Icons.track_changes_rounded,
-            value: formatPercent(value.averagePercent),
-            label: "O'rtacha ball",
-            color: AppColors.success,
+          const SizedBox(width: 9),
+          Expanded(
+            child: _Tile(
+              value: '${value.totalSessions}',
+              // "Jami testlar" counted sessions the student walked away from
+              // as well, which the weekly chart now separates out.
+              label: 'Sessiya',
+              loading: loading,
+            ),
           ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: _StatCard(
-            icon: Icons.task_alt_rounded,
-            value: '${value.correctAnswers}',
-            label: "To'g'ri javoblar",
-            color: AppColors.sky,
+          const SizedBox(width: 9),
+          Expanded(
+            child: _Tile(
+              value: '${value.correctAnswers}',
+              label: "To‘g‘ri javob",
+              loading: loading,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
 
-class _StatCard extends StatelessWidget {
-  const _StatCard({
-    required this.icon,
-    required this.value,
-    required this.label,
-    required this.color,
-  });
+class _Tile extends StatelessWidget {
+  const _Tile({required this.value, required this.label, required this.loading});
 
-  final IconData icon;
   final String value;
   final String label;
-  final Color color;
+  final bool loading;
 
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 14),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 11),
       decoration: BoxDecoration(
         color: c.bgCard,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(15),
         border: Border.all(color: c.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              color: AppColors.tint(color),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, size: 17, color: context.readable(color)),
-          ),
-          const SizedBox(height: 10),
           Text(
-            value,
+            loading ? '—' : value,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: c.textPrimary),
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w900,
+              letterSpacing: -0.6,
+              height: 1.1,
+              fontFeatures: const [FontFeature.tabularFigures()],
+              color: c.textPrimary,
+            ),
           ),
-          const SizedBox(height: 2),
+          const SizedBox(height: 3),
           Text(
             label,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(fontSize: 12, color: c.textMuted),
+            style: TextStyle(fontSize: 10.5, height: 1.2, color: c.textMuted),
           ),
         ],
       ),
@@ -163,196 +182,69 @@ class _StatCard extends StatelessWidget {
   }
 }
 
-/// Sessions started per day over the last week.
-class _WeeklyChart extends ConsumerWidget {
-  const _WeeklyChart();
+class _Week extends ConsumerWidget {
+  const _Week();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final c = context.colors;
     final activity = ref.watch(weeklyActivityProvider);
 
     return AppCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.trending_up_rounded, size: 17, color: c.accent),
-              const SizedBox(width: 8),
-              Text(
-                'Haftalik faollik',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: c.textPrimary),
-              ),
-            ],
-          ),
-          const SizedBox(height: 2),
-          // Said plainly: history records when a session started, nothing finer.
-          Text(
-            "Oxirgi 7 kunda boshlangan sessiyalar",
-            style: TextStyle(fontSize: 12, color: c.textMuted),
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            height: 160,
-            child: activity.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, _) => Center(
-                child: Text(
-                  ApiException.from(e).message,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 13, color: c.textSecondary),
-                ),
-              ),
-              data: (days) => _ActivityBars(days: days),
-            ),
-          ),
-        ],
+      padding: const EdgeInsets.fromLTRB(13, 14, 13, 14),
+      child: activity.when(
+        loading: () => const SizedBox(
+          height: 150,
+          child: Center(child: CircularProgressIndicator()),
+        ),
+        error: (e, _) => ErrorBanner(ApiException.from(e).message),
+        data: (days) => WeeklyChart(days: days),
       ),
     );
   }
 }
 
-class _ActivityBars extends StatelessWidget {
-  const _ActivityBars({required this.days});
+class _Subjects extends StatelessWidget {
+  const _Subjects({required this.subjects, required this.rows});
 
-  final List<DailyActivity> days;
+  final AsyncValue<List<SubjectStats>> subjects;
+  final List<SubjectStats> rows;
 
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
-    final maxCount = days.fold<int>(0, (m, d) => d.count > m ? d.count : m);
-    // At most five labels on the left, so tall weeks do not print 0..11, and a
-    // top that is a whole number of steps, so the axis ends on a round label.
-    final step = (maxCount / 4).ceil().clamp(1, 100).toDouble();
-    final rounded = (maxCount / step).ceil() * step;
-    final top = rounded <= maxCount ? rounded + step : rounded;
-
-    if (maxCount == 0) {
-      return Center(
-        child: Text(
-          "Oxirgi 7 kunda sessiya bo'lmagan",
-          style: TextStyle(fontSize: 13, color: c.textMuted),
-        ),
-      );
-    }
-
-    return BarChart(
-      BarChartData(
-        maxY: top,
-        alignment: BarChartAlignment.spaceAround,
-        barTouchData: BarTouchData(
-          touchTooltipData: BarTouchTooltipData(
-            getTooltipColor: (_) => c.bgInner,
-            getTooltipItem: (group, _, rod, __) => BarTooltipItem(
-              '${days[group.x].label}: ${rod.toY.round()} ta',
-              TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: c.textPrimary),
-            ),
-          ),
-        ),
-        gridData: FlGridData(
-          drawVerticalLine: false,
-          horizontalInterval: step,
-          getDrawingHorizontalLine: (_) => FlLine(color: c.border, strokeWidth: 1),
-        ),
-        borderData: FlBorderData(show: false),
-        titlesData: FlTitlesData(
-          topTitles: const AxisTitles(),
-          rightTitles: const AxisTitles(),
-          leftTitles: AxisTitles(
-            sideTitles: SideTitles(
-              showTitles: true,
-              reservedSize: 26,
-              interval: step,
-              getTitlesWidget: (value, _) => Text(
-                '${value.toInt()}',
-                style: TextStyle(fontSize: 11, color: c.textMuted),
-              ),
-            ),
-          ),
-          bottomTitles: AxisTitles(
-            sideTitles: SideTitles(
-              showTitles: true,
-              reservedSize: 24,
-              getTitlesWidget: (value, _) {
-                final index = value.toInt();
-                if (index < 0 || index >= days.length) return const SizedBox.shrink();
-                return Padding(
-                  padding: const EdgeInsets.only(top: 6),
-                  child: Text(
-                    days[index].label,
-                    style: TextStyle(fontSize: 12, color: c.textMuted),
-                  ),
-                );
-              },
-            ),
-          ),
-        ),
-        barGroups: [
-          for (var i = 0; i < days.length; i++)
-            BarChartGroupData(
-              x: i,
-              barRods: [
-                BarChartRodData(
-                  toY: days[i].count.toDouble(),
-                  width: 18,
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
-                  gradient: const LinearGradient(
-                    begin: Alignment.bottomCenter,
-                    end: Alignment.topCenter,
-                    colors: [AppColors.brand, Color(0xFF818CF8)],
-                  ),
-                ),
-              ],
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Correct / wrong split per subject.
-class _SubjectResults extends ConsumerWidget {
-  const _SubjectResults();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final c = context.colors;
-    final subjects = ref.watch(subjectStatsProvider);
 
     return AppCard(
+      padding: const EdgeInsets.fromLTRB(13, 14, 13, 14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            "Fanlar bo'yicha natija",
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: c.textPrimary),
+            'Fanlar bo‘yicha',
+            style: TextStyle(
+              fontSize: 14.5,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.2,
+              color: c.textPrimary,
+            ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 3),
+          Text(
+            'Eng past ko‘rsatkichdan boshlab',
+            style: TextStyle(fontSize: 11.5, color: c.textMuted),
+          ),
+          const SizedBox(height: 9),
           subjects.when(
-            loading: () => const Center(
-              child: Padding(
-                padding: EdgeInsets.symmetric(vertical: 16),
-                child: CircularProgressIndicator(),
-              ),
+            loading: () => const Padding(
+              padding: EdgeInsets.symmetric(vertical: 24),
+              child: Center(child: CircularProgressIndicator()),
             ),
-            error: (e, _) => Text(
-              ApiException.from(e).message,
-              style: TextStyle(fontSize: 13, color: c.textSecondary),
+            error: (e, _) => ErrorBanner(ApiException.from(e).message),
+            data: (_) => SubjectList(
+              subjects: rows,
+              showCounts: true,
+              tint: c.bgInner,
+              onPractise: (subject) => StatisticsScreen._practise(context, subject),
             ),
-            data: (items) => items.isEmpty
-                ? Text(
-                    "Hali fan bo'yicha natija yo'q",
-                    style: TextStyle(fontSize: 13, color: c.textMuted),
-                  )
-                : Column(
-                    children: [
-                      for (var i = 0; i < items.length; i++) ...[
-                        _SubjectRow(stats: items[i]),
-                        if (i < items.length - 1) const SizedBox(height: 14),
-                      ],
-                    ],
-                  ),
           ),
         ],
       ),
@@ -360,283 +252,101 @@ class _SubjectResults extends ConsumerWidget {
   }
 }
 
-class _SubjectRow extends StatelessWidget {
-  const _SubjectRow({required this.stats});
+/// Study advice, each block clamped until it is opened.
+class _Advice extends ConsumerWidget {
+  const _Advice({required this.weakest});
 
-  final SubjectStats stats;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.colors;
-    final correctShare = stats.total == 0 ? 0.0 : stats.correct / stats.total;
-    final wrongPercent = stats.total == 0 ? 0.0 : stats.wrong * 100 / stats.total;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                stats.subject,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: c.textPrimary),
-              ),
-            ),
-            Text(
-              '✓ ${formatPercent(stats.percent)}',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-                color: context.readable(AppColors.success),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Text(
-              '✗ ${formatPercent(wrongPercent)}',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-                color: context.readable(AppColors.error),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(999),
-          child: Row(
-            children: [
-              Expanded(
-                flex: (correctShare * 1000).round().clamp(1, 1000),
-                child: Container(height: 7, color: AppColors.success),
-              ),
-              Expanded(
-                flex: ((1 - correctShare) * 1000).round().clamp(1, 1000),
-                // Hatching, not just a second colour: red and green are the one
-                // pair a colour-blind reader is most likely to miss, and this
-                // bar is otherwise a single unbroken line.
-                child: CustomPaint(
-                  size: const Size.fromHeight(7),
-                  painter: _HatchPainter(color: AppColors.tint(AppColors.error, 0x66)),
-                  child: const SizedBox(height: 7),
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          '${stats.correct} to‘g‘ri · ${stats.wrong} xato · ${stats.total} jami javob',
-          style: TextStyle(fontSize: 12, color: c.textMuted),
-        ),
-      ],
-    );
-  }
-}
-
-/// Diagonal hatching used for the wrong-answer share of a subject bar.
-class _HatchPainter extends CustomPainter {
-  const _HatchPainter({required this.color});
-
-  final Color color;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    canvas.drawRect(Offset.zero & size, Paint()..color = color);
-
-    final stripe = Paint()
-      ..color = color.withValues(alpha: 1)
-      ..strokeWidth = 2;
-    const step = 6.0;
-    canvas.clipRect(Offset.zero & size);
-    for (var x = -size.height; x < size.width; x += step) {
-      canvas.drawLine(Offset(x, size.height), Offset(x + size.height, 0), stripe);
-    }
-  }
-
-  @override
-  bool shouldRepaint(_HatchPainter oldDelegate) => oldDelegate.color != color;
-}
-
-/// Rule-based study advice with its three blocks.
-class _RecommendationCard extends ConsumerWidget {
-  const _RecommendationCard();
+  /// Subject the "improvement" and "next goal" blocks talk about.
+  final String? weakest;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final c = context.colors;
-    final recommendation = ref.watch(recommendationProvider);
+    final advice = ref.watch(recommendationProvider);
+    final data = advice.valueOrNull;
+    if (data == null || data.isEmpty) return const SizedBox.shrink();
 
-    return recommendation.when(
-      loading: () => const AppCard(
-        child: Center(
-          child: Padding(
-            padding: EdgeInsets.symmetric(vertical: 20),
-            child: CircularProgressIndicator(),
+    final subject = weakest;
+    final practise = subject == null
+        ? null
+        : () => StatisticsScreen._practise(context, subject);
+    final name = SubjectStyle.displayName(subject);
+
+    return AppCard(
+      padding: const EdgeInsets.fromLTRB(13, 14, 13, 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            data.title,
+            style: TextStyle(
+              fontSize: 14.5,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.2,
+              color: c.textPrimary,
+            ),
           ),
-        ),
+          if (data.subtitle.isNotEmpty) ...[
+            const SizedBox(height: 3),
+            Text(
+              data.subtitle,
+              style: TextStyle(fontSize: 11.5, color: c.textMuted),
+            ),
+          ],
+          const SizedBox(height: 9),
+          if (data.strongSides != null)
+            AdviceBlock(
+              block: data.strongSides!,
+              color: AppColors.success,
+              icon: Icons.thumb_up_alt_outlined,
+            ),
+          if (data.improvement != null) ...[
+            const SizedBox(height: 9),
+            AdviceBlock(
+              block: data.improvement!,
+              color: AppColors.warning,
+              icon: Icons.trending_up_rounded,
+              // The advice names a subject; sending the student to the whole
+              // test list made them find it again themselves.
+              actionLabel: practise == null ? null : '$name bo‘yicha mashq qilish',
+              onAction: practise,
+            ),
+          ],
+          if (data.nextGoal != null) ...[
+            const SizedBox(height: 9),
+            AdviceBlock(
+              block: data.nextGoal!,
+              color: AppColors.brandLight,
+              icon: Icons.flag_outlined,
+              actionLabel: practise == null ? null : 'Testni boshlash',
+              onAction: practise,
+            ),
+          ],
+        ],
       ),
-      error: (e, _) => AppCard(
-        child: Text(
-          ApiException.from(e).message,
-          style: TextStyle(fontSize: 13, color: c.textSecondary),
-        ),
-      ),
-      data: (data) {
-        if (data.isEmpty) return const SizedBox.shrink();
-        return AppCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    width: 34,
-                    height: 34,
-                    decoration: BoxDecoration(
-                      color: c.accentMuted,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Icon(Icons.auto_awesome_rounded, size: 17, color: c.accent),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          data.title,
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w800,
-                            color: c.textPrimary,
-                          ),
-                        ),
-                        if (data.subtitle.isNotEmpty)
-                          Text(
-                            data.subtitle,
-                            style: TextStyle(fontSize: 12, color: c.textMuted),
-                          ),
-                      ],
-                    ),
-                  ),
-                  if (data.badge != null && data.badge!.isNotEmpty)
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: c.accentMuted,
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                      child: Text(
-                        data.badge!,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: c.accent,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 14),
-              if (data.strongSides != null)
-                _AdviceBlock(
-                  block: data.strongSides!,
-                  color: AppColors.success,
-                  icon: Icons.thumb_up_alt_outlined,
-                  action: 'Davom etish',
-                  onTap: () => context.push('/tests'),
-                ),
-              if (data.improvement != null) ...[
-                const SizedBox(height: 10),
-                _AdviceBlock(
-                  block: data.improvement!,
-                  color: AppColors.warning,
-                  icon: Icons.trending_up_rounded,
-                  action: 'Mashq qilish',
-                  onTap: () => context.push('/tests'),
-                ),
-              ],
-              if (data.nextGoal != null) ...[
-                const SizedBox(height: 10),
-                _AdviceBlock(
-                  block: data.nextGoal!,
-                  color: AppColors.brandLight,
-                  icon: Icons.flag_outlined,
-                  action: 'Testni boshlash',
-                  onTap: () => context.push('/tests'),
-                ),
-              ],
-            ],
-          ),
-        );
-      },
     );
   }
 }
 
-class _AdviceBlock extends StatelessWidget {
-  const _AdviceBlock({
-    required this.block,
-    required this.color,
-    required this.icon,
-    required this.action,
-    required this.onTap,
-  });
-
-  final RecommendationBlock block;
-  final Color color;
-  final IconData icon;
-  final String action;
-  final VoidCallback onTap;
+/// Nothing has been answered yet, so every block on the page would be empty.
+class _Blank extends StatelessWidget {
+  const _Blank();
 
   @override
   Widget build(BuildContext context) {
-    final c = context.colors;
-
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.tint(color, 0x0F),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.tint(color, 0x33)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(icon, size: 16, color: color),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  block.title,
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: color),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            block.text,
-            style: TextStyle(fontSize: 13, height: 1.5, color: c.textSecondary),
-          ),
-          const SizedBox(height: 10),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: TextButton(
-              onPressed: onTap,
-              style: TextButton.styleFrom(
-                visualDensity: VisualDensity.compact,
-                foregroundColor: color,
-              ),
-              child: Text(action),
-            ),
-          ),
-        ],
-      ),
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 64),
+      children: [
+        EmptyView(
+          icon: Icons.bar_chart_rounded,
+          title: 'Statistika hali bo‘sh',
+          subtitle: 'Birinchi testni ishlang — haftalik faolligingiz, fanlar '
+              'bo‘yicha natijalar va tavsiyalar shundan keyin paydo bo‘ladi.',
+          actionLabel: 'Test ishlash',
+          onAction: () => StatisticsScreen._practise(context, ''),
+        ),
+      ],
     );
   }
 }

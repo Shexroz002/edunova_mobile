@@ -137,7 +137,7 @@ class _LobbyScreenState extends ConsumerState<LobbyScreen> with WidgetsBindingOb
       child: Scaffold(
         appBar: PageAppBar(
           title: const Text("Do'stlar bilan Test"),
-          showThemeToggle: false,
+          showFriends: false,
           leading: IconButton(
             onPressed: _confirmLeave,
             icon: Icon(Icons.arrow_back_rounded, color: context.colors.textSecondary),

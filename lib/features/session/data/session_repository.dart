@@ -8,6 +8,18 @@ import '../domain/session_models.dart';
 /// Quiz sessions: start, play, finish, review, history, leaderboard.
 ///
 /// Paths (including trailing slashes) follow the live OpenAPI exactly.
+/// What `start-single-player` gave back.
+class StartedSession {
+  const StartedSession({required this.sessionId, required this.resumed});
+
+  final int sessionId;
+
+  /// The student already had this quiz open, so this is that session rather
+  /// than a new one — and for a timed test the clock is where they left it,
+  /// not back at the full duration they may have just picked.
+  final bool resumed;
+}
+
 class SessionRepository {
   SessionRepository(this._api);
 
@@ -16,13 +28,49 @@ class SessionRepository {
   static const _base = '/api/v1/student/sessions';
 
   /// Starts a single-player session; returns the new session id.
-  Future<int> startSinglePlayer({required int quizId, required int minutes}) async {
+  ///
+  /// A null [minutes] starts it with no time limit: the server sets no
+  /// deadline, nothing closes the session behind the student, and they can
+  /// come back to it whenever they like. Omitting the parameter is what tells
+  /// the server that — sending a number, any number, is a timed test.
+  ///
+  /// If the student already has this quiz open, the server hands that session
+  /// back instead of starting a new one, so a timed test cannot be restarted
+  /// for a fresh clock.
+  Future<StartedSession> startSinglePlayer({required int quizId, int? minutes}) async {
     final data = await _api.post(
       '$_base/$quizId/start-single-player/',
-      query: {'duration_minute': minutes},
+      query: {if (minutes != null) 'duration_minute': minutes},
     ) as Json;
-    return asInt(data['session_id']) ?? 0;
+    return StartedSession(
+      sessionId: asInt(data['session_id']) ?? 0,
+      resumed: asBool(data['resumed']),
+    );
   }
+
+  /// Answers already stored for an unfinished session.
+  ///
+  /// The play screen keeps its own copy on the device; this is what makes a
+  /// test resumable on a second phone, or after the app is reinstalled.
+  Future<Map<int, String>> fetchSavedAnswers(int sessionId) async {
+    final data = await _api.get('$_base/$sessionId/my-answers/');
+    return {
+      for (final row in asJsonList(data))
+        if (asInt(row['question_id']) case final id?)
+          if (asString(row['selected_option']) case final label?) id: label,
+    };
+  }
+
+  /// Stores one answer as it is given, for any session type.
+  Future<void> saveAnswer({
+    required int sessionId,
+    required int questionId,
+    required String label,
+  }) =>
+      _api.post(
+        '$_base/$sessionId/answer',
+        data: {'question_id': questionId, 'selected_option': label},
+      );
 
   /// Session info (works for single and multiplayer sessions).
   Future<SessionInfo> fetchInfo(int sessionId) async {
@@ -35,15 +83,6 @@ class SessionRepository {
     final data = await _api.get('$_base/multiplayer/$sessionId/questions/') as Json;
     return SessionQuestions.fromJson(data);
   }
-
-  /// Multiplayer only: reports a selected option for live monitoring
-  /// (the server does not persist it — [finish] does).
-  Future<void> reportAnswer(
-          {required int sessionId, required int questionId, required String label}) =>
-      _api.post(
-        '$_base/multiplayer/$sessionId/answer',
-        data: {'question_id': questionId, 'selected_option': label},
-      );
 
   /// Multiplayer only: reports the question the participant is looking at (1-based).
   Future<void> reportQuestionOrder({

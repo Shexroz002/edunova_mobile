@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
+import 'gradient_button.dart';
 
 /// Red inline error box (used under forms).
 class ErrorBanner extends StatelessWidget {
@@ -79,11 +80,24 @@ class ErrorView extends StatelessWidget {
 
 /// Friendly empty state with an icon and a short text.
 class EmptyView extends StatelessWidget {
-  const EmptyView({super.key, required this.icon, required this.title, this.subtitle});
+  const EmptyView({
+    super.key,
+    required this.icon,
+    required this.title,
+    this.subtitle,
+    this.actionLabel,
+    this.onAction,
+  });
 
   final IconData icon;
   final String title;
   final String? subtitle;
+
+  /// Offered when the empty state has one obvious way out — "Test ishlash" on
+  /// a results or statistics page that is waiting for a first test. Both parts
+  /// are needed for the button to appear.
+  final String? actionLabel;
+  final VoidCallback? onAction;
 
   @override
   Widget build(BuildContext context) {
@@ -113,6 +127,18 @@ class EmptyView extends StatelessWidget {
                 subtitle!,
                 textAlign: TextAlign.center,
                 style: TextStyle(color: c.textSecondary, fontSize: 13),
+              ),
+            ],
+            if (actionLabel != null && onAction != null) ...[
+              const SizedBox(height: 18),
+              SizedBox(
+                width: 200,
+                child: GradientButton(
+                  label: actionLabel!,
+                  icon: Icons.play_arrow_rounded,
+                  height: 46,
+                  onPressed: onAction!,
+                ),
               ),
             ],
           ],

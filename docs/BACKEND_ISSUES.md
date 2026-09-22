@@ -85,3 +85,125 @@ Each entry lists what happens, what should happen, and the client workaround.
 | # | Endpoint | Problem | Expected | Client workaround |
 |---|---|---|---|---|
 | 51 | `GET /api/v1/student/quiz/multiplayer/{id}/info/` | `max_participants` is stored on the session (`QuizSession.max_participants`, set by `create`) but the response schema `QuizSessionTeacherResponse` does not include it, so the lobby cannot show how many people the room is waiting for. The host chose the number one screen earlier and then cannot see it; a joiner never learns it at all. | `max_participants` in the info response | the waiting room shows the present count only — no "3 / 4" and no empty slots — and the design is drawn that way on purpose |
+
+## Added 2026-09-19 (home page design pass)
+
+### 52. `analytics/subjects` returns one subject several times, keyed by spelling
+
+`GET /api/v1/student/quizzes/analytics/subjects` groups by the stored subject name rather than
+by subject id, so the same subject comes back once per spelling used when its quizzes were
+created.
+
+Live response for user `shehroz1`:
+
+```json
+[
+  {"subject_name": "Ingliz tili", "correct_answer": 22, "total_answer": 37, "percentage": 59.46},
+  {"subject_name": "fizika",      "correct_answer": 25, "total_answer": 61, "percentage": 40.98},
+  {"subject_name": "Fizika",      "correct_answer": 2,  "total_answer": 5,  "percentage": 40.0}
+]
+```
+
+**Expected:** one row per subject — `fizika` and `Fizika` are the same subject, and their
+counts should add up to 27 / 66 (40.9%).
+
+**Actual:** two rows, which read on the client as two different subjects with near-identical
+scores.
+
+**Client workaround:** `SubjectStats.merged` folds rows whose names match case-insensitively,
+adds the counts and recomputes the percentage from them (averaging the two percentages would
+let a 5-answer row weigh as much as a 61-answer one). The capitalised spelling is kept for
+display. Remove the workaround once the endpoint groups by subject id.
+
+### 53. `analytics/recommendation` states projections as facts, to one decimal
+
+`GET /api/v1/student/quizzes/analytics/recommendation` returns prose the client shows verbatim.
+Two problems in it, seen live for user `shehroz1`:
+
+```
+improvement.text: "matematika fanida natijani yaxshilash uchun imkoniyat bor.
+                   Hozirgi ko'rsatkich 26.7%. ..."
+next_goal.text:   "matematika fanidan yana 5 ta test ishlab ko'rsangiz, natijangizni
+                   taxminan 28.9% gacha olib chiqish imkoniyati bor. ..."
+```
+
+1. **Percentages carry one decimal.** Everywhere else the app rounds (`formatPercent`), so the
+   advice is the only place a student sees `26.7%` rather than `27%`.
+2. **`28.9%` is a projection presented as a measurement.** Nothing in the text marks it as an
+   estimate beyond "taxminan", and the precision implies a model that is not explained.
+
+**Expected:** whole percentages, and either drop the projected figure or phrase it so it cannot be
+read as a recorded score.
+
+**Client workaround:** none — the text is rendered as sent. The blocks are clamped to two lines
+and expand on tap, so the numbers are at least not the first thing read.
+
+### 54. Nothing in `/sessions/me/history/` says a session is still resumable — FIXED 2026-09-22
+
+`GET /api/v1/student/sessions/me/history/` (`SessionLeaderboardRow`) returns `correct_answers`,
+`wrong_answers`, `total_questions`, `finished_at` and `created_at` — and nothing about the
+session itself. The client marks a row "Tugallanmagan" when `answered < total_questions`, but
+that covers two states it cannot tell apart:
+
+* the student pressed **Yakunlash** early — `quiz_attempts.finished = true`, the attempt is over;
+* the student walked away and the session is still inside its window — no finished attempt,
+  the test could be picked up where it was left.
+
+**Expected:** the row carries `status`, `deadline_at` and the attempt's own `finished` flag, so
+the client can offer "Davom ettirish" on exactly the second kind.
+
+**Client workaround:** none — the app offers no way back into a session at all.
+
+### 55. `finish_single_player_quiz` leaves the session `running` — FIXED 2026-09-22
+
+`app/services/quiz/quiz_session.py` — the finish path sets `attempt.finished` and
+`quiz_session.finished_at`, but the status line is commented out:
+
+```python
+attempt.finished = True
+attempt.finished_at = now
+# quiz_session.status = "finished"
+quiz_session.finished_at = now
+```
+
+The session stays `running` until the celery sweep (`quiz.finalize_expired_sessions`) closes it
+at its deadline. Two consequences, both visible in the live data:
+
+1. `quiz_sessions.finished_at` is overwritten by `finalize_session`, so it records the deadline
+   rather than when the student finished. Session 86 was started 11:44:43 and its attempt
+   finished 11:44:54; the session row says 11:50:30. Any "spent time" computed from the session
+   row is wrong by the whole remaining duration.
+2. `status` cannot be used to decide whether a test is resumable — a finished one still reads
+   `running` for the rest of its window. Issue 54 depends on this being fixed first.
+
+**Client workaround:** the history list uses `created_at`/`finished_at` only for the date, never
+for a duration.
+
+### 56. `finish-single-player` re-scores an attempt that is already finished — FIXED 2026-09-22
+
+`POST /api/v1/student/sessions/{session_id}/finish-single-player/` checks the session exists and
+the caller is a participant, then upserts the answers and sets `finished_at` again. It never
+checks `attempt.finished`, nor the deadline. A second call — a retry, or a resume flow that
+mistook a finished session for an open one — overwrites a recorded result.
+
+By contrast `submit_answer_v2` does check both (`"Session is not running"`, `"Session already
+finished"`).
+
+**Expected:** `409` when the attempt is already finished.
+
+### 57. `start-single-player/info` does not check the caller is in the session
+
+`get_single_player_quiz_info` calls `get_single_player_session(session_id, host_id=None)`, and
+the repository applies no filter when `host_id` is falsy. It looks up
+`participant_repo.get_by_session_user` only to fill `current_participant_id`, and does not act on
+a `None`. So `GET /api/v1/student/sessions/{id}/start-single-player/info` returns another
+student's session with its full question list — options included — to any signed-in user.
+
+The endpoint also takes `status="running"` and the service never reads it.
+
+**Expected:** `403` when the caller is not a participant.
+
+> **54–56 fixed in the backend on 2026-09-22** as part of untimed sessions:
+> the history row now carries `status`, `duration_minutes`, `deadline_at` and
+> `attempt_finished`; finishing sets the session to `finished`; and a second
+> finish returns `409`. Issue 57 is still open.

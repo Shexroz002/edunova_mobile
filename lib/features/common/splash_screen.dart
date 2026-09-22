@@ -13,7 +13,7 @@ class SplashScreen extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            BrandTitle(size: 44),
+            BrandTitle(size: 64),
             SizedBox(height: 28),
             SizedBox(width: 26, height: 26, child: CircularProgressIndicator(strokeWidth: 2.6)),
           ],

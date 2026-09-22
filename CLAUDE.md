@@ -90,7 +90,11 @@ lib/
 - **Do not port mock or fake UI** (analysis §4). Use the default decisions below.
 
 ## Default product decisions (ask the owner before changing any)
-1. **Gamification is hidden**: XP, streak, level, achievements, rank, "Top 10%". Home stat cards use `GET /api/v1/student/quizzes/analytics/overall/cards` instead.
+1. **Gamification is hidden**: XP, streak, level, achievements, rank, "Top 10%". The home
+   stat cards that replaced them are hidden too (owner decision, 2026-09-19): they showed the
+   same three numbers the Statistika tab does, and none of them tells the student what to do
+   next. `analytics/overall/cards` is still what Statistika uses; the home page reads only
+   `analytics/subjects`, and its subject list doubles as the way into a test.
 2. **Other fake UI is hidden**:
    - online status and "+12 do'st onlayn";
    - quiz-detail fake "Faol" status, created date, attempts count and 88/67/42% accuracy;

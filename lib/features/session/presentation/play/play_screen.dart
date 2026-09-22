@@ -100,8 +100,12 @@ class _PlayScreenState extends ConsumerState<PlayScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Testdan chiqasizmi?'),
-        content: const Text(
-          "Javoblaringiz saqlanadi, lekin vaqt to'xtamaydi. Vaqt tugaganda test avtomatik yakunlanadi.",
+        content: Text(
+          _controller.hasTimer
+              ? "Javoblaringiz saqlanadi, lekin vaqt to'xtamaydi. "
+                  'Vaqt tugaganda test avtomatik yakunlanadi.'
+              : "Javoblaringiz saqlanadi. Bu testda vaqt hisoblanmaydi - "
+                  "xohlagan vaqtingizda shu joyidan davom ettirasiz.",
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Qolish')),
@@ -265,6 +269,36 @@ class _TimerChip extends StatelessWidget {
               color: color,
               fontFeatures: const [FontFeature.tabularFigures()],
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Stands where the countdown would be, on a test that has no limit.
+class _UntimedChip extends StatelessWidget {
+  const _UntimedChip();
+
+  @override
+  Widget build(BuildContext context) {
+    final color = context.readable(AppColors.brand);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: AppColors.tint(color),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppColors.tint(color, 0x55)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.all_inclusive_rounded, size: 16, color: color),
+          const SizedBox(width: 4),
+          Text(
+            'Vaqtsiz',
+            style: TextStyle(fontWeight: FontWeight.w800, color: color),
           ),
         ],
       ),
@@ -442,6 +476,11 @@ class _StatusBar extends StatelessWidget {
           const SizedBox(width: 10),
           if (c.hasTimer) ...[
             _TimerChip(remaining: c.remaining),
+            const SizedBox(width: 6),
+          ] else ...[
+            // Bo'sh joy qoldirmaymiz: o'quvchi taymer yo'qolib qolgan deb
+            // o'ylamasligi uchun vaqt hisoblanmayotgani aytib turiladi.
+            const _UntimedChip(),
             const SizedBox(width: 6),
           ],
           _BarIconButton(

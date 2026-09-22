@@ -24,6 +24,26 @@ String formatDate(DateTime date) {
   return '${d.day}-${_months[d.month - 1]}, ${d.year}';
 }
 
+/// Heading a history row belongs under: `Bugun`, `Kecha`, `Bu hafta`, then the
+/// month — `Sentyabr`, or `Sentyabr 2025` once the year is not this one.
+///
+/// A results list repeats the same date shape on every row otherwise; forty
+/// rows carry forty copies of `11-sentyabr, 2026 · 21:29`.
+String historyGroup(DateTime date, {DateTime? now}) {
+  final today = (now ?? DateTime.now()).toLocal();
+  final d = date.toLocal();
+  final days = DateTime(today.year, today.month, today.day)
+      .difference(DateTime(d.year, d.month, d.day))
+      .inDays;
+
+  if (days == 0) return 'Bugun';
+  if (days == 1) return 'Kecha';
+  if (days < 7) return 'Bu hafta';
+  final month = _months[d.month - 1];
+  final name = month[0].toUpperCase() + month.substring(1);
+  return d.year == today.year ? name : '$name ${d.year}';
+}
+
 /// `11-sentyabr, 2026 · 18:30` (local time).
 String formatDateTime(DateTime date) {
   final d = date.toLocal();

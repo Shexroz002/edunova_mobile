@@ -107,11 +107,13 @@ by the part's `Content-Type`.
 ## Sessions
 | Method | Path | Params / body | Response |
 |---|---|---|---|
-| POST | `/api/v1/student/sessions/{quiz_id}/start-single-player/` | q:duration_minute=30 | `{session_id, quiz_id}` |
+| POST | `/api/v1/student/sessions/{quiz_id}/start-single-player/` | q:duration_minute? | `{session_id, quiz_id, duration_minutes, started_at, deadline_at, resumed}`. **Omit `duration_minute` for a test with no time limit** — the session then gets no deadline and nothing closes it. `resumed: true` means the student already had this quiz open and got that session back rather than a new one. |
 | GET | `/api/v1/student/sessions/{session_id}/start-single-player/info` | – | `SessionQuestions`. ⚠ **Verified live: returns `questions: []` for a multiplayer session** (checked on session 69); for single-player sessions it returns exactly the same questions as `multiplayer/{id}/questions/` (checked on 9 sessions). **Always use `multiplayer/{id}/questions/`** — it works for both kinds. |
 | POST | `/api/v1/student/sessions/{session_id}/finish-single-player/` | `[{question_id, selected_option}]` | `FinishQuizResponse` |
 | GET | `/api/v1/student/sessions/{session_id}/single-player-error-analysis/` | – | `[ErrorAnalysisItem]` |
-| GET | `/api/v1/student/sessions/me/history/` | q:search?, page, size | `Page<HistoryRow>` |
+| GET | `/api/v1/student/sessions/me/history/` | q:search?, page, size | `Page<HistoryRow>`. Carries `status`, `duration_minutes`, `deadline_at` and `attempt_finished`; a row is resumable when `attempt_finished` is false, `status` is `running` and `deadline_at` is null or still ahead. |
+| POST | `/api/v1/student/sessions/{session_id}/answer` | `{question_id, selected_option}` | Stores one answer, any session type. Same handler as `multiplayer/{id}/answer`. |
+| GET | `/api/v1/student/sessions/{session_id}/my-answers/` | – | `[{question_id, selected_option}]` — what the server has stored, for resuming on another device. Correctness is deliberately absent. |
 | GET | `/api/v1/student/sessions/{session_id}/leaderboard/` | page, size | `Page<ParticipantResult>` |
 | POST | `/api/v1/student/sessions/multiplayer/create/` | `{quiz_id, duration_minutes, max_participants?}` — schema sets **no bounds**; the client enforces 1..180 min and `max_participants` is never enforced by the server | 201 `SessionInfo` (carries `join_code`). Errors: `404 "Quiz not found"`, `404 "Ba'zi savollarda to‘g‘ri javob belgilanmagan."` |
 | POST | `/api/v1/student/sessions/multiplayer/join/` | `{session_code}` (uppercase) | `{id}` (the **session** id). Errors: `404 "Invalid session code"`, `400 "Session already started"` (also for an existing participant — rejoin by id), `403 "Bu faqat belgilangan guruh azolari uchun mo'ljallangan test!"` |

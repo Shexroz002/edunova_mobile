@@ -145,7 +145,7 @@ class _CreateQuizScreenState extends ConsumerState<CreateQuizScreen> {
       child: Scaffold(
         appBar: PageAppBar(
           title: const Text('Test yaratish'),
-          showThemeToggle: false,
+          showFriends: false,
           leading: IconButton(
             onPressed: _back,
             icon: Icon(Icons.arrow_back_rounded, color: c.textSecondary),

@@ -131,7 +131,10 @@ class JoinCodeCard extends StatelessWidget {
               if (info.subjectName != null)
                 _Chip(icon: SubjectStyle.of(info.subjectName).icon, label: info.subjectName!),
               _Chip(icon: Icons.format_list_bulleted_rounded, label: '${info.questionsCount} ta savol'),
-              _Chip(icon: Icons.schedule_rounded, label: formatMinutes(info.durationMinutes)),
+              // A competition always has a limit; an untimed session has none
+              // to show.
+              if (info.durationMinutes case final minutes?)
+                _Chip(icon: Icons.schedule_rounded, label: formatMinutes(minutes)),
             ],
           ),
         ],

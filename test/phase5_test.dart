@@ -33,24 +33,41 @@ void main() {
       expect(days, hasLength(7));
       expect(days.first.day, DateTime(2026, 9, 6));
       expect(days.last.day, DateTime(2026, 9, 12));
-      expect(days.every((d) => d.count == 0), isTrue);
+      expect(days.every((d) => d.total == 0 && d.done == 0), isTrue);
     });
 
     test('counts sessions per day and ignores older ones', () {
       final days = DailyActivity.lastWeek(
         [
-          DateTime(2026, 9, 12, 9),
-          DateTime(2026, 9, 12, 23, 30),
-          DateTime(2026, 9, 10, 8),
-          DateTime(2026, 8, 1), // outside the window
-          null,
+          (startedAt: DateTime(2026, 9, 12, 9), finished: true),
+          (startedAt: DateTime(2026, 9, 12, 23, 30), finished: false),
+          (startedAt: DateTime(2026, 9, 10, 8), finished: true),
+          (startedAt: DateTime(2026, 8, 1), finished: true), // outside the window
+          (startedAt: null, finished: true),
         ],
         now: now,
       );
 
-      expect(days.last.count, 2);
-      expect(days[4].count, 1); // 10 September
-      expect(days.fold<int>(0, (sum, d) => sum + d.count), 3);
+      expect(days.last.total, 2);
+      expect(days[4].total, 1); // 10 September
+      expect(days.fold<int>(0, (sum, d) => sum + d.total), 3);
+    });
+
+    test('separates the sessions that were finished from the rest', () {
+      // A bar of sessions *started* counts a test opened and walked away from
+      // as much as one answered to the end.
+      final days = DailyActivity.lastWeek(
+        [
+          (startedAt: DateTime(2026, 9, 12, 9), finished: true),
+          (startedAt: DateTime(2026, 9, 12, 11), finished: false),
+          (startedAt: DateTime(2026, 9, 12, 14), finished: false),
+        ],
+        now: now,
+      );
+
+      expect(days.last.total, 3);
+      expect(days.last.done, 1);
+      expect(days.last.abandoned, 2);
     });
 
     test('labels weekdays the way the web chart does', () {

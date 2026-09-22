@@ -46,7 +46,7 @@ class QuestionEditScreen extends ConsumerWidget {
     final question = ref.watch(editableQuestionProvider(questionId));
 
     return Scaffold(
-      appBar: const PageAppBar(title: Text('Savolni tahrirlash'), showThemeToggle: false),
+      appBar: const PageAppBar(title: Text('Savolni tahrirlash'), showFriends: false),
       body: question.when(
         loading: () => const LoadingView(),
         error: (e, _) => ErrorView(

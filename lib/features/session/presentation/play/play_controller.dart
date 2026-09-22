@@ -101,6 +101,7 @@ class PlayController extends ChangeNotifier {
           sessionInfo.deadlineAt ??
           _deadlineFrom(data.startedAt ?? sessionInfo.startedAt, sessionInfo.durationMinutes);
       _restoreProgress();
+      await _mergeSavedAnswers();
       loading = false;
       _ticker = Timer.periodic(const Duration(seconds: 1), (_) => _tick());
       _tick(); // also auto-submits right away if time is already up
@@ -142,10 +143,11 @@ class PlayController extends ChangeNotifier {
     answers[question.id] = label;
     _saveProgress();
     _notify();
-    if (isMultiplayer) {
-      _quietly(() =>
-          _repository.reportAnswer(sessionId: sessionId, questionId: question.id, label: label));
-    }
+    // Serverga ham yozamiz: shu sabab test boshqa qurilmada ham, ilova qayta
+    // o'rnatilgandan keyin ham o'z joyidan davom etadi. Yuborilmay qolsa
+    // telefondagi nusxa saqlanib qoladi va keyingi kirishda yuboriladi.
+    _quietly(() =>
+        _repository.saveAnswer(sessionId: sessionId, questionId: question.id, label: label));
   }
 
   /// Moves to question [target] (0-based).
@@ -188,8 +190,12 @@ class PlayController extends ChangeNotifier {
 
   // ── Internals ────────────────────────────────────────────────────────────
 
-  DateTime? _deadlineFrom(DateTime? startedAt, int minutes) =>
-      startedAt == null || minutes <= 0 ? null : startedAt.add(Duration(minutes: minutes));
+  /// Null when the session carries no limit — nothing then counts down and
+  /// nothing submits the test on the student's behalf.
+  DateTime? _deadlineFrom(DateTime? startedAt, int? minutes) =>
+      startedAt == null || minutes == null || minutes <= 0
+          ? null
+          : startedAt.add(Duration(minutes: minutes));
 
   void _tick() {
     final end = deadline;
@@ -246,6 +252,40 @@ class PlayController extends ChangeNotifier {
       if (savedIndex is int && savedIndex >= 0 && savedIndex < questions.length) index = savedIndex;
     } catch (_) {
       _prefs.remove(_storageKey);
+    }
+  }
+
+  /// Folds the server's stored answers into this device's copy.
+  ///
+  /// The server is the one place that sees every device, so what it holds
+  /// wins. A local answer it does not know about was given offline, so it is
+  /// kept and pushed rather than dropped.
+  Future<void> _mergeSavedAnswers() async {
+    final Map<int, String> stored;
+    try {
+      stored = await _repository.fetchSavedAnswers(sessionId);
+    } catch (_) {
+      return; // Oflayn bo'lsa telefondagi nusxa bilan davom etaveramiz.
+    }
+    if (_disposed) return;
+
+    final unsent = {
+      for (final entry in answers.entries)
+        if (!stored.containsKey(entry.key)) entry.key: entry.value,
+    };
+    final validIds = questions.map((q) => q.id).toSet();
+    for (final entry in stored.entries) {
+      if (validIds.contains(entry.key)) answers[entry.key] = entry.value;
+    }
+    if (unsent.isEmpty) return;
+
+    _saveProgress();
+    for (final entry in unsent.entries) {
+      _quietly(() => _repository.saveAnswer(
+            sessionId: sessionId,
+            questionId: entry.key,
+            label: entry.value,
+          ));
     }
   }
 

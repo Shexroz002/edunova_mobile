@@ -65,7 +65,7 @@ class _AuthListenable extends ChangeNotifier {
   }
 }
 
-/// App router with auth-based redirects and the 5-tab student shell.
+/// App router with auth-based redirects and the 3-tab student shell.
 final routerProvider = Provider<GoRouter>((ref) {
   final refresh = _AuthListenable(ref);
 
@@ -157,20 +157,18 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/session/:sessionId/review',
         builder: (_, state) => ReviewScreen(sessionId: _intParam(state, 'sessionId')),
       ),
+      // Outside the shell: these three were tabs, and are full-screen pages
+      // now. Do'stlar is pushed from the header button on every tab page;
+      // Guruhlar and Suhbatlar keep their routes so the links into them — a
+      // group invite, a friend's chat — still resolve.
+      GoRoute(path: Routes.friends, builder: (_, __) => const FriendsScreen()),
+      GoRoute(path: Routes.groups, builder: (_, __) => const GroupsScreen()),
+      GoRoute(path: Routes.chats, builder: (_, __) => const ChatsScreen()),
       StatefulShellRoute.indexedStack(
         builder: (_, __, navigationShell) => StudentShell(navigationShell: navigationShell),
         branches: [
           StatefulShellBranch(routes: [
             GoRoute(path: Routes.home, builder: (_, __) => const HomeScreen()),
-          ]),
-          StatefulShellBranch(routes: [
-            GoRoute(path: Routes.groups, builder: (_, __) => const GroupsScreen()),
-          ]),
-          StatefulShellBranch(routes: [
-            GoRoute(path: Routes.friends, builder: (_, __) => const FriendsScreen()),
-          ]),
-          StatefulShellBranch(routes: [
-            GoRoute(path: Routes.chats, builder: (_, __) => const ChatsScreen()),
           ]),
           StatefulShellBranch(routes: [
             GoRoute(path: Routes.statistics, builder: (_, __) => const StatisticsScreen()),

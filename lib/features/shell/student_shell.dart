@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/brand.dart';
 import '../../core/widgets/responsive.dart';
-import '../chat/presentation/chat_list_controller.dart';
 
 /// A bottom-nav / rail destination.
 class _Destination {
@@ -14,8 +12,7 @@ class _Destination {
 
   final String label;
 
-  /// Used by the phone bar, where six destinations leave about 56 dp each and
-  /// "Bosh sahifa" wrapped onto two lines. The rail keeps the full wording.
+  /// The phone bar shows "Asosiy" where the rail has room for the full wording.
   final String shortLabel;
 
   final IconData icon;
@@ -28,12 +25,16 @@ class _Destination {
 /// * Tablet (≥ 600 dp): [NavigationRail] on the left, extended on large screens.
 ///
 /// Each tab keeps its own navigation stack (go_router `StatefulShellRoute`).
-class StudentShell extends ConsumerWidget {
+class StudentShell extends StatelessWidget {
   const StudentShell({super.key, required this.navigationShell});
 
   final StatefulNavigationShell navigationShell;
 
   /// Order must match the branches in `app_router.dart`.
+  ///
+  /// Guruhlar, Do'stlar and Suhbatlar used to sit here too. They are full-screen
+  /// pages now: Do'stlar opens from the header button on every tab page, and
+  /// private chats open from a friend's row.
   static const _destinations = [
     _Destination(
       'Bosh sahifa',
@@ -41,9 +42,6 @@ class StudentShell extends ConsumerWidget {
       Icons.space_dashboard_rounded,
       short: 'Asosiy',
     ),
-    _Destination('Guruhlar', Icons.school_outlined, Icons.school_rounded),
-    _Destination("Do'stlar", Icons.people_outline_rounded, Icons.people_rounded),
-    _Destination('Suhbatlar', Icons.forum_outlined, Icons.forum_rounded),
     _Destination('Statistika', Icons.bar_chart_outlined, Icons.bar_chart_rounded),
     _Destination('Profil', Icons.person_outline_rounded, Icons.person_rounded),
   ];
@@ -54,54 +52,36 @@ class StudentShell extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    // Unread chats badge the Suhbatlar tab from anywhere in the app.
-    final unread = ref.watch(chatUnreadTotalProvider);
-    return context.isTablet ? _buildTablet(context, unread) : _buildPhone(context, unread);
+  Widget build(BuildContext context) {
+    return context.isTablet ? _buildTablet(context) : _buildPhone(context);
   }
 
-  /// Wraps a destination icon in a count badge (Suhbatlar only).
-  Widget _icon(int index, IconData icon, int unread) {
-    if (index != _chatIndex || unread == 0) return Icon(icon);
-    return Badge(
-      label: Text(unread > 99 ? '99+' : '$unread'),
-      backgroundColor: AppColors.brand,
-      child: Icon(icon),
-    );
-  }
-
-  /// Index of the Suhbatlar tab in [_destinations].
-  static const _chatIndex = 3;
-
-  Widget _buildPhone(BuildContext context, int unread) {
+  Widget _buildPhone(BuildContext context) {
     final c = context.colors;
     return Scaffold(
       body: navigationShell,
       bottomNavigationBar: DecoratedBox(
         decoration: BoxDecoration(border: Border(top: BorderSide(color: c.border))),
-        // Six labels share the width, so they break onto a second line and
-        // collide once the reader raises the system font size. The rest of the
-        // app scales freely; only the bar is held back.
-        child: MediaQuery.withClampedTextScaling(
-          maxScaleFactor: 1.1,
-          child: NavigationBar(
-            selectedIndex: navigationShell.currentIndex,
-            onDestinationSelected: _onSelect,
-            destinations: [
-              for (final (index, d) in _destinations.indexed)
-                NavigationDestination(
-                  icon: _icon(index, d.icon, unread),
-                  selectedIcon: _icon(index, d.selectedIcon, unread),
-                  label: d.shortLabel,
-                ),
-            ],
-          ),
+        // Six labels used to share this width, so they wrapped onto a second
+        // line and collided once the reader raised the system font size, and the
+        // bar had to be held back from scaling. Three have room to scale freely.
+        child: NavigationBar(
+          selectedIndex: navigationShell.currentIndex,
+          onDestinationSelected: _onSelect,
+          destinations: [
+            for (final d in _destinations)
+              NavigationDestination(
+                icon: Icon(d.icon),
+                selectedIcon: Icon(d.selectedIcon),
+                label: d.shortLabel,
+              ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildTablet(BuildContext context, int unread) {
+  Widget _buildTablet(BuildContext context) {
     final c = context.colors;
     final extended = context.isLargeScreen;
 
@@ -110,10 +90,10 @@ class StudentShell extends ConsumerWidget {
         children: [
           SafeArea(
             right: false,
-            // The rail lays its brand and five destinations out in a Column that
-            // does not scroll, so a short viewport (landscape phone, or a tablet
-            // with the keyboard open) overflows it. Letting it scroll while
-            // still filling the full height keeps every destination reachable.
+            // The rail lays its brand and destinations out in a Column that does
+            // not scroll, so a short viewport (landscape phone, or a tablet with
+            // the keyboard open) overflows it. Letting it scroll while still
+            // filling the full height keeps every destination reachable.
             child: LayoutBuilder(
               builder: (context, constraints) => SingleChildScrollView(
                 child: ConstrainedBox(
@@ -128,13 +108,13 @@ class StudentShell extends ConsumerWidget {
                           extended ? NavigationRailLabelType.none : NavigationRailLabelType.all,
                       leading: Padding(
                         padding: const EdgeInsets.symmetric(vertical: 16),
-                        child: extended ? const BrandTitle(size: 30) : const BrandMark(size: 36),
+                        child: extended ? const BrandTitle(size: 34) : const BrandMark(size: 36),
                       ),
                       destinations: [
-                        for (final (index, d) in _destinations.indexed)
+                        for (final d in _destinations)
                           NavigationRailDestination(
-                            icon: _icon(index, d.icon, unread),
-                            selectedIcon: _icon(index, d.selectedIcon, unread),
+                            icon: Icon(d.icon),
+                            selectedIcon: Icon(d.selectedIcon),
                             label: Text(d.label),
                           ),
                       ],

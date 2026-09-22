@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/network/api_exception.dart';
+import '../../../core/router/app_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/page_app_bar.dart';
 import '../../../core/widgets/state_views.dart';
@@ -46,7 +47,10 @@ class ChatInfoScreen extends ConsumerWidget {
     try {
       await ref.read(chatRoomProvider(chatId).notifier).leave();
       if (!context.mounted) return;
-      context.go('/chats');
+      // The chat list is no longer a tab: going there would leave the
+      // student on a page with nothing to go back to. Home always has the
+      // bar, and Do'stlar — where this chat was opened from — is one tap on.
+      context.go(Routes.home);
     } on ApiException catch (error) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.message)));

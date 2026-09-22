@@ -297,8 +297,12 @@ class ChatRoomController extends FamilyAsyncNotifier<ChatRoomState, int> {
     switch (event) {
       case MessageNewEvent(:final chatId, :final message) when chatId == _chatId:
         if (current.messages.any((m) => m.id == message.id)) return;
-        _clearTyping(message.senderId);
         state = AsyncData(current.copyWith(messages: [...current.messages, message]));
+        // Only after the write: `current` is a snapshot taken before it, so
+        // clearing first would be undone by the line above — and with the
+        // linger timer already cancelled nothing would ever take the
+        // indicator down again.
+        _clearTyping(message.senderId);
         _reportRead([message]);
 
       case MessageAckEvent(:final chatId, :final messageId, :final clientMessageId)

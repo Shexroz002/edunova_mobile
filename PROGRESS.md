@@ -909,6 +909,106 @@ A centred dialog was considered, to match the web exactly. It is possible
 would drag the quiz picker into a dialog too — every other modal in the app is a
 sheet, and Material puts forms in sheets. The owner chose the sheet.
 
+## Design pass: Asosiy and Natijalar (2026-09-19)
+
+**Asosiy.** The page was a vertical menu ~1 400 dp tall on a 607 dp viewport, so the competition
+card and the subject list never reached the first screen. The three stat cards came out — the same
+numbers the Statistika tab shows, none of which says what to do next (`CLAUDE.md` decision 1
+updated) — the second way into a test came out, and the per-tile descriptions came out. The
+subject list stays because it is a launcher, not a report: the weakest subject is first and a row
+opens the quiz picker filtered to it. "Jonli sessiya" was the backend's word for joining a
+competition, so it merged into one Musobaqa block with *Yaratish* and *Kod bilan kirish*. About
+770 dp now. New: `features/home/widgets/*`, `SubjectStats.merged` (BACKEND_ISSUES 52),
+`SubjectStyle.displayName`, a `subject` filter on the quiz picker.
+
+**Natijalar.** One result cost 248 dp and stated its score four ways (percent pill, grade letter,
+progress bar, count chips), so 42 results ran to about eighteen screens. The row is 64 dp and says
+it once, coloured by band. Three findings from the code went with it: an abandoned test scored
+`0% · D`, indistinguishable from failing — `isFinished` only catches null counts, so
+`HistoryItem.isComplete` compares answers to questions; "Reyting" sat on every row including solo
+tests, where the leaderboard holds one person, and is now the rank chip on competitions only; and
+the card tap and its own "Ko'rish" button opened two different things. A result now has one
+destination — a sheet that merges both, instant from the history row with the per-topic breakdown
+loading under it. `/session/{id}/result` stays the post-test screen. "Jami vaqt" left the summary:
+it summed `finishedAt - createdAt` and read 149 hours while its own rows said "0 daqiqa". The
+average now comes from the same provider as Statistika, so the app stopped showing 25 % and 36 %
+for one number.
+
+Open for the owner: which average is authoritative, whether grade letters should return, and
+whether `single-player-error-analysis` yields topics for a competition session.
+
+**Statistika (2026-09-19).** The page was not too long — it was repetitive and inert. A subject's
+score was stated three ways (`✓59% ✗41%`, a two-tone bar, and "22 to'g'ri · 15 xato · 37 jami
+javob"), and nothing on the page could be acted on: it named the weakest subject and left the
+student to go back to the home page to practise it. The weekly chart counted sessions *started*,
+which the results work showed is mostly abandoned tests, so each bar now splits into finished and
+walked-away. The subject list is the home page's widget, moved to `features/analytics/presentation`
+— the two screens had drawn the same data differently, one merged and capitalised, the other not,
+so "Fizika 41 %" and "fizika 41 %" stood in one app. Advice blocks clamp to two lines and expand on
+tap (550 dp → 330), and their action starts a test in the subject the advice names instead of
+pushing the whole test list. `EmptyView` gained an optional action, which the Natijalar empty state
+uses too. Backend issue 53 records the advice text's one-decimal percentages and its projected
+figure.
+
+**Profil (2026-09-19).** The page opened like a dashboard: a gradient header carrying sessions,
+correct answers and the average — the fourth copy of those numbers, after Statistika, the Natijalar
+summary and the home cards this pass already removed. Profil is an identity page, so they are gone
+and the header is the avatar, the name and the handle. Its old subtitle said the class a second
+time and added "O'quvchi", which is true of every user here. The details list was read-only and
+printed "—" for anything unfilled while the only way into editing sat below the subjects card;
+every row opens the edit screen now and an empty one reads "Kiritilmagan" in the brand colour.
+Tapping the avatar does what a reader expects — it opens editing, where the photo is changed — and
+the camera badge says so. "Fanlarim" here became "Tanlangan fanlar", because the home page and
+Statistika use that name for per-subject *scores*. Signing out left the settings card, where it sat
+one stray tap from the theme toggle, and stands alone at the foot of the page. Password change
+stays absent (decision 5, no endpoint). About 720 dp → 610.
+
+**Do'stlar (2026-09-19).** A tidy-up, not a rethink: the owner declined all three of the design's
+proposals — inviting a friend to a competition, removing a friend, and real presence dots — so the
+page keeps its one job, finding a friend and writing to them. Without a second action the person
+sheet the design showed would have held one button the row's icon already offers, so it was dropped
+too. What shipped: the row itself opens the chat (its 300 dp used to be inert, with only the 48 dp
+icon working), "Qo'shish" moved to the app bar so the search field runs full width, the decorative
+"Do'stlaringiz bilan raqobatlashing" line went (it promised something the page cannot do), the
+count heading became a plain label, and the teacher badge moved to the handle line, where it stops
+clipping the name to "Shehroz Toshp…". The empty state uses `EmptyView`'s action. 140 dp → 86 before
+the first row. `_FriendTile` became `widgets/friend_tile.dart` so it can be tested.
+
+For the record, from reading `../quiz_app`: contacts have **create, list and suggestions only** —
+there is no delete endpoint, so a friend added cannot be removed. The owner does not want that
+feature, so it is noted here rather than in BACKEND_ISSUES.
+
+**Testlar (2026-09-19).** A quiz card was 298 dp — three badges, a two-line title, a description,
+three meta chips and two buttons — so 44 quizzes ran to about twenty-two screens with barely one
+visible at a time. The row is 80 dp: subject icon, title, and one meta line (subject, questions,
+estimated minutes), with a start button at the end. The description went because it restates the
+title, the NEW and AI/PDF badges because neither helps choose a quiz, and the creation date because
+it was the least useful of the three chips. "Tizim testi" stayed: it is the minority and it
+explains why such a row opens a notice instead of a detail. The gradient hero card (144 dp) went
+whole — one of its counters repeated the result line word for word — along with the in-page header,
+so the list starts 90 dp down instead of 318. A quiz with no questions shows a lock rather than a
+start it cannot honour, and the list gained bottom padding because the floating button was cutting
+the last row's title in half. `QuizCard` became `widgets/quiz_row.dart`.
+
+Owner decision: the per-card **"Musobaqa" button is removed outright** rather than moved. The quiz
+detail screen never had one, and competitions still start from the home page's Musobaqa block,
+which picks a quiz of its own.
+
+**Test natijasi (2026-09-20).** The summary card said one result six times: the ring, the grade
+pill, "8 / 10 to'g'ri javob", a "Yakunlandi: …" sentence, the same three numbers as tiles, then
+"Aniqlik" and "Baho" repeating the ring and the pill. Only the time was new, and it stays. "Aniqlik"
+also misled — it is `correctAnswers / answeredQuestions` against the ring's
+`correctAnswers / totalQuestions`, so a test with skipped questions showed two different
+percentages and explained neither; skipped questions are named in words now. The grade letter went
+with it (the word stays), as on the results list. "Xatolar tahlili" moved from below the whole topic
+list — about 760 dp down — to directly under the summary.
+
+The topic section now appears **only from two topics on**. A question without a topic is filed under
+`'Umumiy'` in both `FinishResult.fromReview` and `TopicStat.fromJson`, so a quiz whose questions
+carry no topic produced a single row whose percentage is the overall score by definition — a
+seventh restatement wrapped in a heading and two dead filter chips. "Zaif mavzular yo'q — ajoyib!"
+is untouched: that answers a filter the student chose, it is not an empty state.
+
 ## Next
 Tablet pass, part 2: test detali, guruh detali, sessiya natijasi, test ishlash, test yaratish and
 profil tahrirlash still need the same treatment.

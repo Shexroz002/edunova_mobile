@@ -128,7 +128,7 @@ class _CompetitionCreateScreenState extends ConsumerState<CompetitionCreateScree
     final hasQuizzes = ref.watch(_hasQuizzesProvider).valueOrNull ?? true;
 
     return Scaffold(
-      appBar: const PageAppBar(title: Text('Musobaqa yaratish'), showThemeToggle: false),
+      appBar: const PageAppBar(title: Text('Musobaqa yaratish'), showFriends: false),
       body: SafeArea(
         top: false,
         child: Column(

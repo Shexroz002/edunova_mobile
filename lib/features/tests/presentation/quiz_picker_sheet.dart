@@ -3,16 +3,26 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/api_exception.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/subject_style.dart';
 import '../../../core/widgets/search_field.dart';
 import '../../../core/widgets/state_views.dart';
 import '../data/tests_repository.dart';
 import '../domain/quiz.dart';
 
-/// Picks a quiz for a competition.
+/// Picks a quiz.
 ///
 /// The web uses a searchable dropdown; on a phone a full-height sheet with a
 /// search field and large tap targets is the better equivalent.
-Future<QuizSummary?> showQuizPickerSheet(BuildContext context, {QuizSummary? selected}) {
+///
+/// [subject] narrows the list to one subject — how a home subject row starts a
+/// test in its own subject. `quiz_list` has no subject parameter, so the filter
+/// is applied to the page that comes back; every quiz already carries its
+/// subject name.
+Future<QuizSummary?> showQuizPickerSheet(
+  BuildContext context, {
+  QuizSummary? selected,
+  String? subject,
+}) {
   return showModalBottomSheet<QuizSummary>(
     context: context,
     isScrollControlled: true,
@@ -22,17 +32,21 @@ Future<QuizSummary?> showQuizPickerSheet(BuildContext context, {QuizSummary? sel
       expand: false,
       initialChildSize: 0.75,
       maxChildSize: 0.95,
-      builder: (_, controller) =>
-          _QuizPickerSheet(selected: selected, scrollController: controller),
+      builder: (_, controller) => _QuizPickerSheet(
+        selected: selected,
+        subject: subject,
+        scrollController: controller,
+      ),
     ),
   );
 }
 
 class _QuizPickerSheet extends ConsumerStatefulWidget {
-  const _QuizPickerSheet({required this.scrollController, this.selected});
+  const _QuizPickerSheet({required this.scrollController, this.selected, this.subject});
 
   final ScrollController scrollController;
   final QuizSummary? selected;
+  final String? subject;
 
   @override
   ConsumerState<_QuizPickerSheet> createState() => _QuizPickerSheetState();
@@ -46,7 +60,11 @@ class _QuizPickerSheetState extends ConsumerState<_QuizPickerSheet> {
     final page = await ref
         .read(testsRepositoryProvider)
         .fetchQuizzes(search: _search.isEmpty ? null : _search, page: 1, size: 50);
-    return page.items;
+    final subject = widget.subject?.trim().toLowerCase();
+    if (subject == null || subject.isEmpty) return page.items;
+    return page.items
+        .where((quiz) => quiz.subject?.trim().toLowerCase() == subject)
+        .toList();
   }
 
   void _reload() => setState(() => _future = _load());
@@ -61,7 +79,9 @@ class _QuizPickerSheetState extends ConsumerState<_QuizPickerSheet> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            'Testni tanlang',
+            widget.subject == null
+                ? 'Testni tanlang'
+                : '${SubjectStyle.displayName(widget.subject)} bo‘yicha testlar',
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: c.textPrimary),
           ),
           const SizedBox(height: 12),
@@ -87,10 +107,13 @@ class _QuizPickerSheetState extends ConsumerState<_QuizPickerSheet> {
                 }
                 final quizzes = snapshot.data ?? const <QuizSummary>[];
                 if (quizzes.isEmpty) {
-                  return const EmptyView(
+                  return EmptyView(
                     icon: Icons.quiz_outlined,
                     title: 'Testlar topilmadi',
-                    subtitle: "Boshqa so'z bilan qidirib ko'ring",
+                    subtitle: widget.subject == null
+                        ? "Boshqa so'z bilan qidirib ko'ring"
+                        : '${SubjectStyle.displayName(widget.subject)} bo‘yicha '
+                            'testingiz yo‘q — yangisini yarating',
                   );
                 }
                 return ListView.separated(

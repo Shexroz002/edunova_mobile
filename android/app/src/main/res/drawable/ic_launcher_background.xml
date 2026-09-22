@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- EduNova brand gradient, the same violet -> indigo as the in-app logo tile. -->
+<!-- The blue of the supplied artwork: deep at the bottom-left, bright at
+     the top-right, matching its diagonal. -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
     <gradient
-        android:angle="315"
-        android:startColor="#8B5CF6"
-        android:endColor="#6366F1"
+        android:angle="45"
+        android:startColor="#0122B4"
+        android:centerColor="#0068FC"
+        android:endColor="#01D7FC"
         android:type="linear" />
 </shape>

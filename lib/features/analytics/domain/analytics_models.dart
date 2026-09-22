@@ -49,6 +49,55 @@ class SubjectStats {
   final DateTime? firstAttempt;
   final DateTime? lastAttempt;
 
+  /// Folds rows the backend returns for one subject under several spellings.
+  ///
+  /// `analytics/subjects` groups by the stored subject name, so "fizika" and
+  /// "Fizika" come back as two rows for the same subject. Counts are added and
+  /// the percentage is recomputed from them, which weights each spelling by the
+  /// answers it carried — averaging the two percentages would let a five-answer
+  /// row count as much as a sixty-answer one.
+  static List<SubjectStats> merged(List<SubjectStats> rows) {
+    final byName = <String, SubjectStats>{};
+    for (final row in rows) {
+      final key = row.subject.trim().toLowerCase();
+      final seen = byName[key];
+      if (seen == null) {
+        byName[key] = row;
+        continue;
+      }
+      final correct = seen.correct + row.correct;
+      final total = seen.total + row.total;
+      byName[key] = SubjectStats(
+        subject: _betterSpelling(seen.subject, row.subject),
+        correct: correct,
+        wrong: seen.wrong + row.wrong,
+        total: total,
+        percent: total == 0 ? 0 : correct / total * 100,
+        firstAttempt: _earlier(seen.firstAttempt, row.firstAttempt),
+        lastAttempt: _later(seen.lastAttempt, row.lastAttempt),
+      );
+    }
+    return byName.values.toList();
+  }
+
+  /// Prefers the capitalised spelling, which is how a subject is written.
+  static String _betterSpelling(String a, String b) {
+    final aCapital = a.isNotEmpty && a[0] == a[0].toUpperCase();
+    final bCapital = b.isNotEmpty && b[0] == b[0].toUpperCase();
+    if (aCapital == bCapital) return a;
+    return aCapital ? a : b;
+  }
+
+  static DateTime? _earlier(DateTime? a, DateTime? b) {
+    if (a == null || b == null) return a ?? b;
+    return a.isBefore(b) ? a : b;
+  }
+
+  static DateTime? _later(DateTime? a, DateTime? b) {
+    if (a == null || b == null) return a ?? b;
+    return a.isAfter(b) ? a : b;
+  }
+
   factory SubjectStats.fromJson(Json json) => SubjectStats(
         subject: asString(json['subject_name']) ?? 'Fan',
         correct: asInt(json['correct_answer']) ?? 0,
@@ -118,13 +167,21 @@ class Recommendation {
   }
 }
 
-/// Sessions started on one day, for the weekly activity chart.
+/// Sessions of one day, split by whether they were finished.
 class DailyActivity {
-  const DailyActivity({required this.day, required this.count});
+  const DailyActivity({required this.day, required this.total, required this.done});
 
   /// Local midnight of the day.
   final DateTime day;
-  final int count;
+
+  /// Sessions started on this day.
+  final int total;
+
+  /// How many of them the student answered through to the end.
+  final int done;
+
+  /// Started and walked away from.
+  int get abandoned => total - done;
 
   /// Uzbek weekday abbreviation, as on the web chart.
   String get label => switch (day.weekday) {
@@ -140,21 +197,33 @@ class DailyActivity {
   /// Counts sessions per day over the last 7 days, oldest first.
   ///
   /// The web hard-codes `[4,7,3,8,5,2,6]`; `CLAUDE.md` default decision 3 says
-  /// to compute it from history instead. History only records when a session
-  /// was created, so this counts **sessions started**, and the chart says so.
-  static List<DailyActivity> lastWeek(Iterable<DateTime?> startedAt, {DateTime? now}) {
+  /// to compute it from history instead.
+  ///
+  /// The count is split because a bar of sessions *started* overstates the
+  /// week: a large share of them are abandoned after a handful of questions,
+  /// so an untouched test would stand as tall as one answered to the end.
+  static List<DailyActivity> lastWeek(
+    Iterable<({DateTime? startedAt, bool finished})> sessions, {
+    DateTime? now,
+  }) {
     final today = now ?? DateTime.now();
     final midnight = DateTime(today.year, today.month, today.day);
     final days = [for (var i = 6; i >= 0; i--) midnight.subtract(Duration(days: i))];
-    final counts = {for (final day in days) day: 0};
+    final total = {for (final day in days) day: 0};
+    final done = {for (final day in days) day: 0};
 
-    for (final raw in startedAt) {
+    for (final session in sessions) {
+      final raw = session.startedAt;
       if (raw == null) continue;
       final local = raw.toLocal();
       final key = DateTime(local.year, local.month, local.day);
-      if (counts.containsKey(key)) counts[key] = counts[key]! + 1;
+      if (!total.containsKey(key)) continue;
+      total[key] = total[key]! + 1;
+      if (session.finished) done[key] = done[key]! + 1;
     }
 
-    return [for (final day in days) DailyActivity(day: day, count: counts[day]!)];
+    return [
+      for (final day in days) DailyActivity(day: day, total: total[day]!, done: done[day]!),
+    ];
   }
 }

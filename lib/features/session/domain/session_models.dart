@@ -26,7 +26,7 @@ class SessionInfo {
     required this.hostId,
     required this.joinCode,
     required this.status,
-    required this.durationMinutes,
+    this.durationMinutes,
     required this.questionsCount,
     required this.type,
     this.quizName,
@@ -46,7 +46,9 @@ class SessionInfo {
 
   /// `waiting | running | finished`.
   final String status;
-  final int durationMinutes;
+
+  /// Null when the session has no time limit.
+  final int? durationMinutes;
   final int questionsCount;
   final DateTime? startedAt;
   final DateTime? deadlineAt;
@@ -68,7 +70,7 @@ class SessionInfo {
         hostId: asInt(json['host_id']) ?? 0,
         joinCode: asString(json['join_code']) ?? '',
         status: asString(json['status'])?.toLowerCase() ?? 'running',
-        durationMinutes: asInt(json['duration_minutes']) ?? 0,
+        durationMinutes: asInt(json['duration_minutes']),
         questionsCount: asInt(json['questions_count']) ?? 0,
         startedAt: parseTashkentDate(json['started_at']),
         deadlineAt: parseTashkentDate(json['deadline_at']),
@@ -237,6 +239,10 @@ class HistoryItem {
     this.wrongAnswers,
     this.totalQuestions,
     this.finishedAt,
+    this.status,
+    this.limitMinutes,
+    this.deadlineAt,
+    this.attemptFinished = true,
   });
 
   final int sessionId;
@@ -250,8 +256,51 @@ class HistoryItem {
   final DateTime? finishedAt;
   final DateTime? createdAt;
 
+  /// The session's own state: `waiting | running | finished`.
+  final String? status;
+
+  /// The session's time limit, null when it was started without one.
+  ///
+  /// Not to be confused with [durationMinutes] below, which is how long the
+  /// student actually took.
+  final int? limitMinutes;
+  final DateTime? deadlineAt;
+
+  /// Whether the attempt was scored and closed.
+  ///
+  /// Defaults to true so a server that does not send it is treated as
+  /// finished — the safe answer, since offering to resume a closed test only
+  /// leads to a `409`.
+  final bool attemptFinished;
+
+  /// Whether the student can pick this test back up.
+  ///
+  /// Three things have to hold: the attempt was never closed, the session is
+  /// still running, and its window has not passed. An untimed session has no
+  /// window, so it stays open until it is finished.
+  bool get canResume {
+    if (attemptFinished || status != 'running') return false;
+    final end = deadlineAt;
+    return end == null || end.isAfter(DateTime.now().toUtc());
+  }
+
   /// Unfinished sessions come back with null counts.
   bool get isFinished => correctAnswers != null && totalQuestions != null;
+
+  /// Answers the student actually gave.
+  int get answered => (correctAnswers ?? 0) + (wrongAnswers ?? 0);
+
+  /// Whether every question was answered.
+  ///
+  /// [isFinished] only catches a session that reported nothing at all — its
+  /// counts come back null. A test the student walked away from reports real
+  /// numbers that do not add up: 0 correct, 5 wrong, 30 questions. Scoring that
+  /// as 0 % makes it look like a failed test rather than an unfinished one.
+  bool get isComplete {
+    final total = totalQuestions ?? 0;
+    if (!isFinished || total == 0) return false;
+    return answered >= total;
+  }
 
   bool get isMultiplayer => (participantCount ?? 1) > 1;
 
@@ -281,6 +330,10 @@ class HistoryItem {
         totalQuestions: asInt(json['total_questions']),
         finishedAt: parseUtcDate(json['finished_at']),
         createdAt: parseUtcDate(json['created_at']),
+        status: asString(json['status']),
+        limitMinutes: asInt(json['duration_minutes']),
+        deadlineAt: parseUtcDate(json['deadline_at']),
+        attemptFinished: asBool(json['attempt_finished'], fallback: true),
       );
 }
 

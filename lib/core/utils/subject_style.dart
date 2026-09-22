@@ -9,6 +9,17 @@ class SubjectStyle {
   final IconData icon;
   final Color color;
 
+  /// A subject name as it should be shown.
+  ///
+  /// Names are stored however the quiz author typed them, so the same subject
+  /// appears as "matematika" and "Matematika". Filtering and grouping use the
+  /// stored name; only what the reader sees is capitalised.
+  static String displayName(String? subject) {
+    final name = (subject ?? '').trim();
+    if (name.isEmpty) return name;
+    return name[0].toUpperCase() + name.substring(1);
+  }
+
   /// Style for a subject name such as "Matematika" or "Fizika".
   factory SubjectStyle.of(String? subject) {
     final name = (subject ?? '').toLowerCase();

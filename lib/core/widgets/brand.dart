@@ -33,29 +33,28 @@ class BrandMark extends StatelessWidget {
   }
 }
 
-/// Logo tile + "EduNova" word mark.
+/// Horizontal EduNova lockup: the emblem and the word mark, as one image.
+///
+/// The supplied artwork is drawn for a light background — its cap and the word
+/// "Edu" are navy, which all but vanishes on the dark theme's surfaces — so a
+/// variant with that navy remapped to white ships beside it, chosen by theme.
+/// Everything blue is untouched in both, so the brand reads the same either way.
 class BrandTitle extends StatelessWidget {
   const BrandTitle({super.key, this.size = 32});
 
+  /// Height of the lockup. The width follows the artwork's 3.15:1 ratio.
   final double size;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        BrandMark(size: size),
-        SizedBox(width: size * 0.3),
-        Text(
-          'EduNova',
-          style: TextStyle(
-            fontSize: size * 0.56,
-            fontWeight: FontWeight.w800,
-            letterSpacing: -0.3,
-            color: context.colors.textPrimary,
-          ),
-        ),
-      ],
+    return Image.asset(
+      context.isDark
+          ? 'assets/branding/lockup_dark.png'
+          : 'assets/branding/lockup_light.png',
+      height: size,
+      fit: BoxFit.contain,
+      filterQuality: FilterQuality.medium,
+      semanticLabel: 'EduNova',
     );
   }
 }

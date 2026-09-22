@@ -70,7 +70,7 @@ class _JoinCodeSheetState extends ConsumerState<_JoinCodeSheet> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              'Jonli sessiyaga qo‘shilish',
+              'Musobaqaga kirish',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: c.textPrimary),
             ),
             const SizedBox(height: 4),
@@ -136,7 +136,7 @@ class _JoinCodeSheetState extends ConsumerState<_JoinCodeSheet> {
             ],
             const SizedBox(height: 18),
             PrimaryButton(
-              label: 'Qo‘shilish',
+              label: 'Kirish',
               icon: Icons.login_rounded,
               loading: _joining,
               onPressed: _isComplete ? _join : null,

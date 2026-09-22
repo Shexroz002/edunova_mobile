@@ -3,30 +3,63 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/network/api_exception.dart';
+import '../../../core/router/app_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/formatters.dart';
-import '../../../core/utils/grade.dart';
-import '../../../core/widgets/app_card.dart';
-import '../../../core/widgets/filter_chips.dart';
-import '../../../core/widgets/header_button.dart';
-import '../../../core/widgets/page_header.dart';
+import '../../../core/widgets/page_app_bar.dart';
 import '../../../core/widgets/quiz/badges.dart';
-import '../../../core/widgets/search_field.dart';
 import '../../../core/widgets/responsive.dart';
+import '../../../core/widgets/search_field.dart';
 import '../../../core/widgets/state_views.dart';
+import '../../analytics/data/analytics_repository.dart';
 import '../../session/data/session_repository.dart';
 import '../../session/domain/session_models.dart';
 import 'leaderboard_sheet.dart';
+import '../../tests/presentation/start_test_sheet.dart';
 import 'result_detail_sheet.dart';
+import 'widgets/result_row.dart';
 
 /// All history rows of the current student (newest first).
 final historyProvider = FutureProvider.autoDispose<List<HistoryItem>>(
   (ref) => ref.watch(sessionRepositoryProvider).fetchAllHistory(),
 );
 
-enum _Sort { recent, best, worst }
+/// How the list is ordered. All three are orders — "Barchasi" used to sit among
+/// them as if it were one.
+enum ResultSort {
+  recent('Yangi', Icons.schedule_rounded),
+  best('Eng yaxshi', Icons.trending_up_rounded),
+  worst('Eng past', Icons.trending_down_rounded);
 
-/// Test history: summary, sorting and per-session actions (result, review, leaderboard).
+  const ResultSort(this.label, this.icon);
+
+  final String label;
+  final IconData icon;
+}
+
+/// A date heading and the results under it.
+class ResultGroup {
+  const ResultGroup(this.label, this.items);
+
+  final String label;
+  final List<HistoryItem> items;
+
+  /// Splits rows into `Bugun` / `Kecha` / `Bu hafta` / month, keeping order.
+  ///
+  /// Only worth doing while the list is in date order; sorting by score mixes
+  /// the dates up, so those orders come back as one unlabelled group.
+  static List<ResultGroup> of(List<HistoryItem> items, {DateTime? now}) {
+    final groups = <String, List<HistoryItem>>{};
+    for (final item in items) {
+      final date = item.finishedAt ?? item.createdAt;
+      final label = date == null ? 'Sana yo‘q' : historyGroup(date, now: now);
+      groups.putIfAbsent(label, () => []).add(item);
+    }
+    return [for (final entry in groups.entries) ResultGroup(entry.key, entry.value)];
+  }
+}
+
+/// Test history: one summary line, the order, and the results by date.
 class ResultsScreen extends ConsumerStatefulWidget {
   const ResultsScreen({super.key, this.openSessionId});
 
@@ -38,7 +71,7 @@ class ResultsScreen extends ConsumerStatefulWidget {
 }
 
 class _ResultsScreenState extends ConsumerState<ResultsScreen> {
-  _Sort _sort = _Sort.recent;
+  ResultSort _sort = ResultSort.recent;
 
   /// Guards the one-shot auto-open, so the sheet does not reappear on rebuild.
   bool _opened = false;
@@ -79,15 +112,28 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen> {
   List<HistoryItem> _sorted(List<HistoryItem> items) {
     final list = [...items];
     switch (_sort) {
-      case _Sort.recent:
+      case ResultSort.recent:
         break;
-      case _Sort.best:
+      case ResultSort.best:
         list.sort((a, b) => b.percent.compareTo(a.percent));
-      case _Sort.worst:
+      case ResultSort.worst:
         list.sort((a, b) => a.percent.compareTo(b.percent));
     }
     return list;
   }
+
+  /// Offered by the empty state: there is nothing to list until a test is run.
+  Future<void> _startTest(BuildContext context) async {
+    final sessionId = await showStartTestSheet(context);
+    if (sessionId != null && context.mounted) context.push('/session/$sessionId/play');
+  }
+
+  void _openLeaderboard(HistoryItem item) => showLeaderboardSheet(
+        context,
+        sessionId: item.sessionId,
+        title: item.title,
+        date: item.finishedAt ?? item.createdAt,
+      );
 
   /// Opens the requested leaderboard after the first frame that has data, so
   /// the sheet can carry the row's own title and date.
@@ -113,7 +159,19 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen> {
     final history = ref.watch(historyProvider);
 
     return Scaffold(
+      appBar: PageAppBar(
+        title: const Text('Natijalar'),
+        showFriends: false,
+        actions: [
+          IconButton(
+            onPressed: _toggleSearch,
+            tooltip: 'Qidirish',
+            icon: Icon(_searchOpen ? Icons.close_rounded : Icons.search_rounded),
+          ),
+        ],
+      ),
       body: SafeArea(
+        top: false,
         child: history.when(
           loading: () => const LoadingView(),
           error: (e, _) => ErrorView(
@@ -121,54 +179,80 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen> {
             onRetry: () => ref.invalidate(historyProvider),
           ),
           data: (all) {
-            final items = all;
-            final visible = _matching(items);
-            _autoOpen(items);
+            _autoOpen(all);
+            final visible = _sorted(_matching(all));
+            // Date headings only mean something while the list is in date
+            // order; by score the dates interleave.
+            final groups = _sort == ResultSort.recent
+                ? ResultGroup.of(visible)
+                : [ResultGroup('', visible)];
+
             return RefreshIndicator(
               onRefresh: () => ref.refresh(historyProvider.future),
               child: ListView(
                 physics: const AlwaysScrollableScrollPhysics(),
-                padding: EdgeInsets.all(context.pagePadding),
+                padding: EdgeInsets.fromLTRB(
+                  context.pagePadding,
+                  12,
+                  context.pagePadding,
+                  28,
+                ),
                 children: [
                   ContentConstraint(
                     maxWidth: 760,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        PageHeader(
-                          title: 'Natijalar',
-                          subtitle: 'Barcha test natijalari',
-                          trailing: _SearchToggle(open: _searchOpen, onTap: _toggleSearch),
-                        ),
                         if (_searchOpen) ...[
-                          const SizedBox(height: 14),
                           SearchField(
                             hint: "Test nomi yoki fan bo'yicha qidiring...",
                             controller: _searchController,
                             autofocus: true,
                             onChanged: (value) => setState(() => _query = value),
                           ),
-                        ],
-                        const SizedBox(height: 16),
-                        _Summary(items: items),
-                        const SizedBox(height: 16),
-                        _FilterRow(
-                          count: visible.length,
-                          sort: _sort,
-                          onSelected: (value) => setState(() => _sort = value),
-                        ),
-                        const SizedBox(height: 16),
-                        if (visible.isEmpty)
-                          EmptyView(
-                            icon: _query.isEmpty ? Icons.history_rounded : Icons.search_off_rounded,
-                            title: _query.isEmpty ? "Hali natijalar yo'q" : 'Natija topilmadi',
-                            subtitle: _query.isEmpty
-                                ? 'Birinchi testingizni ishlang'
-                                : '"$_query" bo\'yicha hech narsa yo\'q',
-                          ),
-                        for (final item in _sorted(visible)) ...[
-                          _HistoryCard(item: item),
                           const SizedBox(height: 12),
+                        ],
+                        if (all.isNotEmpty) ...[
+                          _SummaryStrip(items: all),
+                          const SizedBox(height: 10),
+                          _SortRow(
+                            sort: _sort,
+                            count: visible.length,
+                            onSelected: (value) => setState(() => _sort = value),
+                          ),
+                        ],
+                        if (visible.isEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 40),
+                            child: EmptyView(
+                              icon: _query.isEmpty
+                                  ? Icons.history_rounded
+                                  : Icons.search_off_rounded,
+                              title: _query.isEmpty
+                                  ? 'Hali natija yo‘q'
+                                  : 'Natija topilmadi',
+                              subtitle: _query.isEmpty
+                                  ? 'Birinchi testni ishlang — natijalaringiz '
+                                      'shu yerda sanalar bo‘yicha to‘planadi.'
+                                  : '"$_query" bo\'yicha hech narsa yo\'q',
+                              actionLabel: _query.isEmpty ? 'Test ishlash' : null,
+                              onAction: _query.isEmpty ? () => _startTest(context) : null,
+                            ),
+                          ),
+                        for (final group in groups) ...[
+                          if (group.label.isNotEmpty) _GroupHeading(group.label),
+                          for (final item in group.items) ...[
+                            const SizedBox(height: 8),
+                            ResultRow(
+                              item: item,
+                              // An open session has no result to show yet, so
+                              // the row goes back into the test instead.
+                              onOpen: () => item.canResume
+                                  ? context.push('/session/${item.sessionId}/play')
+                                  : showResultDetailSheet(context, item: item),
+                              onLeaderboard: () => _openLeaderboard(item),
+                            ),
+                          ],
                         ],
                       ],
                     ),
@@ -183,407 +267,150 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen> {
   }
 }
 
-/// Header action that reveals the search field, as on the web.
-class _SearchToggle extends StatelessWidget {
-  const _SearchToggle({required this.open, required this.onTap});
-
-  final bool open;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.colors;
-    return HeaderButton(
-      tooltip: open ? 'Qidiruvni yopish' : 'Qidirish',
-      onTap: onTap,
-      icon: open ? Icons.close_rounded : Icons.search_rounded,
-      background: open ? c.accentMuted : c.bgCard,
-      border: open ? c.accentBorder : c.border,
-      iconColor: open ? c.accent : c.textSecondary,
-    );
-  }
-}
-
-/// "Saralash:" with the chips and the result counter.
+/// Average and best, on one line that opens Statistika.
 ///
-/// A phone has room for the label and the counter on one line and the chips on
-/// the next; a tablet fits all three on a single line, as the web does.
-class _FilterRow extends StatelessWidget {
-  const _FilterRow({required this.count, required this.sort, required this.onSelected});
-
-  final int count;
-  final _Sort sort;
-  final ValueChanged<_Sort> onSelected;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.colors;
-
-    final label = Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(Icons.filter_alt_outlined, size: 15, color: c.textMuted),
-        const SizedBox(width: 6),
-        Text('Saralash:', style: TextStyle(fontSize: 13, color: c.textMuted)),
-      ],
-    );
-
-    final chips = FilterChips<_Sort>(
-      options: const [
-        FilterOption(_Sort.recent, 'Barchasi', icon: Icons.schedule_rounded),
-        FilterOption(_Sort.best, 'Eng yaxshi', icon: Icons.trending_up_rounded),
-        FilterOption(_Sort.worst, 'Eng yomon', icon: Icons.trending_down_rounded),
-      ],
-      selected: sort,
-      onSelected: onSelected,
-      segmented: !context.isTablet,
-    );
-
-    final counter = Pill(
-      label: '$count natija',
-      color: AppColors.brandLight,
-      icon: Icons.auto_awesome_rounded,
-    );
-
-    if (context.isTablet) {
-      return Row(
-        children: [
-          label,
-          const SizedBox(width: 12),
-          Flexible(child: chips),
-          const SizedBox(width: 12),
-          counter,
-        ],
-      );
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Row(children: [label, const Spacer(), counter]),
-        const SizedBox(height: 10),
-        chips,
-      ],
-    );
-  }
-}
-
-class _Summary extends StatelessWidget {
-  const _Summary({required this.items});
+/// This was a 159 dp card with four tiles. Two are gone: "Savollar" is trivia,
+/// and "Jami vaqt" summed `finishedAt - createdAt`, which counts a test left
+/// open rather than time spent — it read 149 hours while the rows under it said
+/// "0 daqiqa".
+class _SummaryStrip extends ConsumerWidget {
+  const _SummaryStrip({required this.items});
 
   final List<HistoryItem> items;
 
   @override
-  Widget build(BuildContext context) {
-    final finished = items.where((i) => i.isFinished).toList();
-    final average = finished.isEmpty
+  Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.colors;
+    final finished = items.where((i) => i.isFinished);
+    final best = finished.isEmpty
         ? 0.0
-        : finished.map((i) => i.percent).reduce((a, b) => a + b) / finished.length;
-    final best =
-        finished.isEmpty ? 0.0 : finished.map((i) => i.percent).reduce((a, b) => a > b ? a : b);
-    final questions = finished.fold<int>(0, (sum, i) => sum + (i.totalQuestions ?? 0));
-    // The web's "Jami vaqt" counts unfinished sessions too and is wrong because
-    // of it (web bug #5); only finished sessions have a real duration.
-    final minutes = finished.fold<int>(0, (sum, i) => sum + (i.durationMinutes ?? 0));
+        : finished.map((i) => i.percent).reduce((a, b) => a > b ? a : b);
+    // The same average Statistika and the home page show. Computing it here
+    // instead gave one app two different "o'rtacha ball" — 25 % against 36 %.
+    final average = ref.watch(overallStatsProvider).valueOrNull?.averagePercent ?? 0;
 
-    return AppCard(
-      padding: const EdgeInsets.all(18),
-      child: Row(
-        children: [
-          ScoreRing(percent: average, size: 84, caption: "o'rtacha ball"),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: _StatTile(
-                        icon: Icons.assignment_outlined,
-                        value: '${items.length} ta',
-                        label: 'Sessiyalar',
-                        color: AppColors.brandLight,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: _StatTile(
-                        icon: Icons.emoji_events_outlined,
-                        value: formatPercent(best),
-                        label: 'Eng yuqori',
-                        color: AppColors.warning,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _StatTile(
-                        icon: Icons.schedule_rounded,
-                        value: formatMinutesCompact(minutes),
-                        label: 'Jami vaqt',
-                        color: AppColors.sky,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: _StatTile(
-                        icon: Icons.help_outline_rounded,
-                        value: '$questions',
-                        label: 'Savollar',
-                        color: AppColors.error,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
+    return Material(
+      color: c.bgCard,
+      borderRadius: BorderRadius.circular(16),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => context.go(Routes.statistics),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: c.border),
           ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Small stat tile of the summary grid.
-class _StatTile extends StatelessWidget {
-  const _StatTile({
-    required this.icon,
-    required this.value,
-    required this.label,
-    required this.color,
-  });
-
-  final IconData icon;
-  final String value;
-  final String label;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.colors;
-    final dark = context.isDark;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
-      decoration: BoxDecoration(
-        // The web tints every summary tile with its own accent; four grey
-        // boxes lose the colour coding entirely.
-        color: AppColors.tint(color, dark ? 0x1C : 0x12),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.tint(color, dark ? 0x3D : 0x33)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+          padding: const EdgeInsets.fromLTRB(13, 12, 13, 12),
+          child: Row(
             children: [
-              Icon(icon, size: 14, color: color),
-              const SizedBox(width: 5),
-              Flexible(
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    value,
-                    maxLines: 1,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w800,
-                      color: c.textPrimary,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(fontSize: 12, color: c.textMuted),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _HistoryCard extends StatelessWidget {
-  const _HistoryCard({required this.item});
-
-  final HistoryItem item;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.colors;
-    final date = item.finishedAt ?? item.createdAt;
-    final minutes = item.durationMinutes;
-
-    return AppCard(
-      onTap: item.isFinished ? () => context.push('/session/${item.sessionId}/result') : null,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SubjectIconTile(item.subject),
-              const SizedBox(width: 12),
+              ScoreRing(percent: average, size: 48),
+              const SizedBox(width: 13),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      item.title ?? 'Test',
-                      maxLines: 2,
+                      'O‘rtacha ball',
+                      maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                          fontSize: 15, fontWeight: FontWeight.w700, color: c.textPrimary),
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.2,
+                        color: c.textPrimary,
+                      ),
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 2),
                     Text(
-                      [
-                        if (item.subject != null) item.subject!,
-                        if (date != null) formatDateTime(date),
-                        if (minutes != null) '$minutes daqiqa',
-                      ].join(' · '),
-                      style: TextStyle(fontSize: 12, color: c.textMuted),
+                      'Eng yuqori natija — ${formatPercent(best)}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontSize: 11.5, color: c.textMuted),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(width: 8),
-              if (!item.isFinished) const Pill(label: 'Tugallanmagan', color: AppColors.warning),
+              Icon(Icons.chevron_right_rounded, size: 20, color: c.textMuted),
             ],
           ),
-          if (item.isFinished) ...[
-            const SizedBox(height: 12),
-            // The web leads with the score and the grade side by side, then a
-            // bar, rather than a single badge floating at the right edge.
-            Row(
-              children: [
-                _ScorePill(percent: item.percent),
-                const SizedBox(width: 8),
-                GradeBadge(item.percent),
-              ],
-            ),
-            const SizedBox(height: 10),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(999),
-              child: LinearProgressIndicator(
-                value: item.percent / 100,
-                minHeight: 6,
-                backgroundColor: c.bgInner,
-                valueColor: AlwaysStoppedAnimation(Grade.of(item.percent).color),
-              ),
-            ),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                _Count(
-                  icon: Icons.check_circle_outline,
-                  color: AppColors.success,
-                  text: '${item.correctAnswers}',
-                ),
-                _Count(
-                  icon: Icons.cancel_outlined,
-                  color: AppColors.error,
-                  text: '${item.wrongAnswers ?? 0}',
-                ),
-                _Count(
-                  icon: Icons.help_outline_rounded,
-                  color: c.textMuted,
-                  text: '${item.totalQuestions}',
-                ),
-                if (item.isMultiplayer)
-                  _Count(
-                    icon: Icons.emoji_events_outlined,
-                    color: const Color(0xFFFBBF24),
-                    text: '#${item.rank} / ${item.participantCount}',
-                  ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: _CardAction(
-                    icon: Icons.visibility_outlined,
-                    label: "Ko'rish",
-                    accent: AppColors.sky,
-                    onTap: () => showResultDetailSheet(context, item: item),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: _CardAction(
-                    icon: Icons.groups_outlined,
-                    label: 'Reyting',
-                    accent: AppColors.brand,
-                    onTap: () => showLeaderboardSheet(
-                      context,
-                      sessionId: item.sessionId,
-                      title: item.title,
-                      date: item.finishedAt ?? item.createdAt,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ],
+        ),
       ),
     );
   }
 }
 
-/// Tinted card action, coloured per the web: sky for "Ko'rish", indigo for
-/// "Reyting". A plain outlined button made the two read as the same action.
-class _CardAction extends StatelessWidget {
-  const _CardAction({
-    required this.icon,
-    required this.label,
-    required this.accent,
-    required this.onTap,
-  });
+/// The three orders and how many rows are showing.
+class _SortRow extends StatelessWidget {
+  const _SortRow({required this.sort, required this.count, required this.onSelected});
 
-  final IconData icon;
-  final String label;
-  final Color accent;
+  final ResultSort sort;
+  final int count;
+  final ValueChanged<ResultSort> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+
+    return Row(
+      children: [
+        for (final option in ResultSort.values) ...[
+          _SortChip(
+            option: option,
+            selected: option == sort,
+            onTap: () => onSelected(option),
+          ),
+          const SizedBox(width: 7),
+        ],
+        const Spacer(),
+        Text(
+          '$count',
+          style: TextStyle(
+            fontSize: 11.5,
+            fontWeight: FontWeight.w700,
+            fontFeatures: const [FontFeature.tabularFigures()],
+            color: c.textMuted,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SortChip extends StatelessWidget {
+  const _SortChip({required this.option, required this.selected, required this.onTap});
+
+  final ResultSort option;
+  final bool selected;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final dark = context.isDark;
-    final foreground = context.readable(accent);
+    final c = context.colors;
+    final brand = context.readable(AppColors.brand);
+    final tone = selected ? brand : c.textSecondary;
 
     return Material(
-      color: AppColors.tint(accent, dark ? 0x1A : 0x14),
-      borderRadius: BorderRadius.circular(12),
+      color: selected ? AppColors.tint(brand, 0x24) : Colors.transparent,
+      borderRadius: BorderRadius.circular(999),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
         child: Container(
-          height: 42,
-          alignment: Alignment.center,
+          height: 36,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.tint(accent, dark ? 0x47 : 0x38)),
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: selected ? AppColors.tint(brand, 0x70) : c.border),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, size: 16, color: foreground),
-              const SizedBox(width: 7),
+              Icon(option.icon, size: 14, color: tone),
+              const SizedBox(width: 6),
               Text(
-                label,
-                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: foreground),
+                option.label,
+                style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: tone),
               ),
             ],
           ),
@@ -593,64 +420,23 @@ class _CardAction extends StatelessWidget {
   }
 }
 
-/// Score percentage in a tinted pill, as the web shows it.
-class _ScorePill extends StatelessWidget {
-  const _ScorePill({required this.percent});
+class _GroupHeading extends StatelessWidget {
+  const _GroupHeading(this.label);
 
-  final double percent;
+  final String label;
 
   @override
   Widget build(BuildContext context) {
-    final color = Grade.of(percent).color;
-    final dark = context.isDark;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-      decoration: BoxDecoration(
-        color: AppColors.tint(color, dark ? 0x24 : 0x18),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: AppColors.tint(color, dark ? 0x4D : 0x3D)),
-      ),
+    return Padding(
+      padding: const EdgeInsets.only(top: 18, bottom: 2),
       child: Text(
-        formatPercent(percent),
+        label.toUpperCase(),
         style: TextStyle(
-          fontSize: 14,
+          fontSize: 11,
           fontWeight: FontWeight.w800,
-          color: context.readable(color),
+          letterSpacing: 1.2,
+          color: context.colors.textMuted,
         ),
-      ),
-    );
-  }
-}
-
-class _Count extends StatelessWidget {
-  const _Count({required this.icon, required this.color, required this.text});
-
-  final IconData icon;
-  final Color color;
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.colors;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: c.bgInner,
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: c.border),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 14, color: context.readable(color)),
-          const SizedBox(width: 5),
-          Text(
-            text,
-            style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: c.textSecondary),
-          ),
-        ],
       ),
     );
   }
