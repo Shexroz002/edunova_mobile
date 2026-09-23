@@ -41,22 +41,24 @@ class ResultRow extends StatelessWidget {
     final subject = SubjectStyle.displayName(item.subject);
     final parts = [if (subject.isNotEmpty) subject];
 
-    if (item.canResume) {
-      parts.add('davom ettirish mumkin');
-      return parts.join(' · ');
-    }
+    // Davom ettiriladigan satrda o'ng tomonda tugma turadi va nima qilish
+    // mumkinligini o'zi aytadi; meta qatoriga faqat fan qoladi, aks holda
+    // tugma bilan ikkisi bir-birini siqib qo'yadi.
+    if (item.canResume) return parts.join(' · ');
 
-    if (!item.isComplete) {
-      final total = item.totalQuestions ?? 0;
-      parts.add(total == 0
-          ? 'javob berilmagan'
-          : '${item.answered}/$total javob berilgan');
-      return parts.join(' · ');
-    }
-
-    parts.add('${item.totalQuestions} ta savol');
-    final minutes = item.durationMinutes;
-    if (minutes != null && minutes > 0) parts.add(formatMinutes(minutes));
+    // Yakunlangan test - natija, nechta savol javobsiz qolganidan qat'i
+    // nazar. Javobsizlari foizga allaqachon kirgan, shuning uchun bu yerda
+    // qancha javob berilgani va qancha vaqt ketgani aytiladi.
+    final total = item.totalQuestions ?? 0;
+    parts.add(switch (total) {
+      // Savollar soni yo'q - aytadigan nisbat ham yo'q. "0/0" hech narsani
+      // bildirmaydi.
+      0 => 'javob berilmagan',
+      _ when item.answered >= total => '$total ta savol',
+      _ => '${item.answered}/$total javob berilgan',
+    });
+    final spent = item.spentLabel;
+    if (spent != null) parts.add(spent);
     return parts.join(' · ');
   }
 
@@ -77,102 +79,132 @@ class ResultRow extends StatelessWidget {
             border: Border.all(color: c.border),
           ),
           padding: const EdgeInsets.all(12),
-          child: Row(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                width: 38,
-                height: 38,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: AppColors.tint(style.color, 0x2B),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(style.icon, size: 19, color: context.readable(style.color)),
-              ),
-              const SizedBox(width: 11),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      item.title ?? 'Test',
-                      // Real titles run to "Fizika: mustahkamlash uchun test";
-                      // one line clipped most of them even after the row was
-                      // cleared of buttons.
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: -0.1,
-                        color: c.textPrimary,
-                      ),
+              Row(
+                children: [
+                  Container(
+                    width: 38,
+                    height: 38,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: AppColors.tint(style.color, 0x2B),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    SizedBox(height: item.isMultiplayer ? 0 : 4),
-                    Row(
+                    child: Icon(style.icon, size: 19, color: context.readable(style.color)),
+                  ),
+                  const SizedBox(width: 11),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        // The rank sits on the meta line rather than beside the
-                        // score: in the trailing group it, the percentage and
-                        // the chevron together left the title 119 dp, and
-                        // "Fizika: mustahkamlash uchun test" clipped even
-                        // across two lines. Here the title gets 176 dp.
-                        if (item.isMultiplayer) ...[
-                          _RankChip(item: item, onTap: onLeaderboard),
-                          const SizedBox(width: 7),
-                        ],
-                        Flexible(
-                          child: Text(
-                            _meta,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(fontSize: 11.5, color: c.textMuted),
+                        Text(
+                          item.title ?? 'Test',
+                          // Real titles run to "Fizika: mustahkamlash uchun test";
+                          // one line clipped most of them even after the row was
+                          // cleared of buttons.
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: -0.1,
+                            color: c.textPrimary,
                           ),
+                        ),
+                        SizedBox(height: item.isMultiplayer ? 0 : 4),
+                        Row(
+                          children: [
+                            // The rank sits on the meta line rather than beside the
+                            // score: in the trailing group it, the percentage and
+                            // the chevron together left the title 119 dp, and
+                            // "Fizika: mustahkamlash uchun test" clipped even
+                            // across two lines. Here the title gets 176 dp.
+                            if (item.isMultiplayer) ...[
+                              _RankChip(item: item, onTap: onLeaderboard),
+                              const SizedBox(width: 7),
+                            ],
+                            Flexible(
+                              child: Text(
+                                _meta,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(fontSize: 11.5, color: c.textMuted),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
+                  ),
+                  // Davom ettiriladigan satrda o'ng tomon bo'sh qoladi: pastdagi
+                  // tugma ham testning tugallanmaganini aytadi, ham qayerga olib
+                  // borishini. Yoniga yana "tugallanmagan" belgisi va strelka
+                  // qo'yish o'sha gapni uch marta takrorlash bo'lardi.
+                  if (!item.canResume) ...[
+                    const SizedBox(width: 9),
+                    // Yakunlangan test har doim o'z foizini oladi - javobsiz
+                    // qolgan savollari bo'lsa ham; ular ballga kirgan.
+                    // Baholanmagani (masalan, ilova majburan yopilgan vaqtli
+                    // sessiya) esa hech qanday raqam ko'rsatmaydi: u hali
+                    // natija emas, va supurgi uni deadline'da yopadi.
+                    if (item.isFinished)
+                      Text(
+                        formatPercent(item.percent),
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.3,
+                          fontFeatures: const [FontFeature.tabularFigures()],
+                          color: scoreColor(context, item.percent),
+                        ),
+                      ),
+                    const SizedBox(width: 8),
+                    Icon(Icons.chevron_right_rounded, size: 20, color: c.textMuted),
                   ],
-                ),
+                ],
               ),
-              const SizedBox(width: 9),
-              if (item.canResume)
-                // Bu yagona satr turi: uni ochish natijani ko'rish emas,
-                // testni davom ettirish demakdir. Yozuv o'rniga belgi -
-                // "Davom ettirish" pilli sarlavhani kesib qo'yadi, matni esa
-                // pastdagi qatorda turibdi.
-                Tooltip(
-                  message: 'Davom ettirish',
-                  child: Icon(
-                    Icons.play_circle_fill_rounded,
-                    size: 20,
-                    color: context.readable(AppColors.brand),
-                  ),
-                )
-              else if (item.isComplete)
-                Text(
-                  formatPercent(item.percent),
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.3,
-                    fontFeatures: const [FontFeature.tabularFigures()],
-                    color: scoreColor(context, item.percent),
-                  ),
-                )
-              else
-                // `0% · D` read exactly like failing the test, though the
-                // student had answered 5 of 30 questions and walked away. The
-                // meta line already says how far they got, so the marker here
-                // stays an icon rather than a pill wide enough to clip titles.
-                Tooltip(
-                  message: 'Tugallanmagan',
-                  child: Icon(Icons.pause_circle_outline_rounded,
-                      size: 20, color: c.textMuted),
-                ),
-              const SizedBox(width: 8),
-              Icon(Icons.chevron_right_rounded, size: 20, color: c.textMuted),
+              // Sarlavha yonida "Davom ettirish" uchun joy yo'q - u yerda
+              // tugma sarlavhani 90 dp gacha siqib qo'yadi. O'z qatorida esa
+              // hech narsani kesmaydi va tugallanmagan testni ro'yxatda
+              // darhol ajratib turadi.
+              if (item.canResume) ...[
+                const SizedBox(height: 10),
+                _ResumeButton(onPressed: onOpen),
+              ],
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Takes the student back into a test they have not finished.
+class _ResumeButton extends StatelessWidget {
+  const _ResumeButton({required this.onPressed});
+
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final brand = context.readable(AppColors.brand);
+
+    return SizedBox(
+      width: double.infinity,
+      child: FilledButton.icon(
+        onPressed: onPressed,
+        icon: const Icon(Icons.play_arrow_rounded, size: 18),
+        label: const Text('Davom ettirish'),
+        style: FilledButton.styleFrom(
+          backgroundColor: AppColors.tint(brand, 0x29),
+          foregroundColor: brand,
+          elevation: 0,
+          minimumSize: const Size(0, 38),
+          textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(11)),
         ),
       ),
     );
@@ -225,8 +257,7 @@ class _RankChip extends StatelessWidget {
                   const SizedBox(width: 3),
                   Text(
                     '${item.rank}/${item.participantCount}',
-                    style:
-                        TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: warning),
+                    style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w800, color: warning),
                   ),
                 ],
               ),

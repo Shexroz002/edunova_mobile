@@ -127,20 +127,24 @@ void main() {
       expect(find.byType(LinearProgressIndicator), findsNothing);
     });
 
-    testWidgets('an abandoned test is not a failed one', (tester) async {
+    testWidgets('a test handed in with gaps is still a result', (tester) async {
       // Live row from the device: 0 correct, 5 wrong, 30 questions — the
-      // student answered five and walked away. The old card scored that "0%"
-      // with a "D", which reads exactly like failing the test.
+      // student answered five and handed it in. The session is over, so the
+      // score stands; the meta line says how much of it was attempted.
       await _pump(tester, row(_item(correct: 0, wrong: 5, total: 30)));
 
-      expect(find.byIcon(Icons.pause_circle_outline_rounded), findsOneWidget);
-      expect(find.text('0%'), findsNothing);
-      expect(find.text('Matematika · 5/30 javob berilgan'), findsOneWidget);
+      expect(find.text('0%'), findsOneWidget);
+      expect(find.byIcon(Icons.pause_circle_outline_rounded), findsNothing);
+      expect(find.textContaining('5/30 javob berilgan'), findsOneWidget);
     });
 
-    testWidgets('a session that reported nothing says so too', (tester) async {
+    testWidgets('a session that reported nothing claims no score', (tester) async {
+      // Null counts mean the attempt was never scored, so there is no result
+      // to state — and calling it 0 % would invent one.
       await _pump(tester, row(_item(correct: null, wrong: null, total: 30)));
-      expect(find.byIcon(Icons.pause_circle_outline_rounded), findsOneWidget);
+
+      expect(find.textContaining('%'), findsNothing);
+      expect(find.byIcon(Icons.pause_circle_outline_rounded), findsNothing);
     });
 
     testWidgets('names the placing only for a competition, and opens it',

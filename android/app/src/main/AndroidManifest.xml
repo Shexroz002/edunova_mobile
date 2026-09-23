@@ -1,4 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Debug va profile manifestlarida bu ruxsat bor edi, bu yerda esa yo'q:
+         shuning uchun release build umuman tarmoqqa chiqolmay, har bir so'rov
+         "Serverga ulanib bo'lmadi" bilan tugardi. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <!-- Chat voice messages are recorded in the app. -->
     <uses-permission android:name="android.permission.RECORD_AUDIO"/>
     <application

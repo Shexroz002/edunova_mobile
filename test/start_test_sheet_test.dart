@@ -57,7 +57,7 @@ void main() {
       await _open(tester);
 
       expect(find.text('Test ishlash'), findsOneWidget);
-      expect(find.text('Testni tanlang va vaqt limitini belgilang'), findsOneWidget);
+      expect(find.text("Testni tanlang, xohlasangiz vaqt limiti qo'ying"), findsOneWidget);
       expect(find.text('Testni tanlang...'), findsOneWidget);
       expect(find.text('Boshlash'), findsOneWidget);
     });

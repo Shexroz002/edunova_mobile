@@ -65,7 +65,11 @@ class _StartTestSheetState extends ConsumerState<_StartTestSheet> {
 
   /// Vaqt limitisiz rejim: server deadline qo'ymaydi va o'quvchi testni
   /// xohlagan vaqtida davom ettira oladi.
-  bool _untimed = false;
+  ///
+  /// Boshlang'ich holat aynan shu: vaqt tanlanmagan bo'lsa, u hisoblanmaydi.
+  /// Avval tavsiya etilgan daqiqa oldindan tanlab qo'yilardi, ya'ni hech
+  /// nima bosmagan o'quvchi bilmagan holda taymer bilan boshlab yuborardi.
+  bool _untimed = true;
   bool _starting = false;
   String? _error;
 
@@ -73,7 +77,6 @@ class _StartTestSheetState extends ConsumerState<_StartTestSheet> {
   void initState() {
     super.initState();
     _quiz = widget.quiz;
-    _minutes = _recommended;
   }
 
   /// The smallest option that fits the quiz's suggestion, or null while no quiz
@@ -93,8 +96,10 @@ class _StartTestSheetState extends ConsumerState<_StartTestSheet> {
     if (picked == null || !mounted) return;
     setState(() {
       _quiz = picked;
-      // The suggestion follows the quiz, so a fresh pick resets the limit.
-      _minutes = _recommended;
+      // Yangi test - yangi tanlov: vaqt yana tanlanmagan holatiga qaytadi,
+      // aks holda oldingi test uchun qo'yilgan limit sezdirmay o'tib ketardi.
+      _minutes = null;
+      _untimed = true;
       _error = null;
     });
   }
@@ -180,14 +185,19 @@ class _StartTestSheetState extends ConsumerState<_StartTestSheet> {
               const SizedBox(height: 12),
               _Hint(
                 untimed: _untimed,
+                // Vaqtsiz - boshlang'ich holat, shuning uchun izoh ikki ishni
+                // qiladi: vaqt hisoblanmasligini aytadi va limit kerak
+                // bo'lganlar uchun tavsiyani ko'rsatadi.
                 text: _untimed
-                    ? 'Vaqt hisoblanmaydi. Testni to\'xtatib, keyin xohlagan '
-                        "vaqtingizda o'sha joyidan davom ettirasiz."
-                    : quiz == null
-                        ? 'Test tanlangach tavsiya etilgan vaqt ★ bilan belgilanadi. '
-                            'Vaqt tugaganda test avtomatik yakunlanadi.'
-                        : 'Savollar soniga qarab ${formatMinutes(_recommended!)} tavsiya '
-                            'etiladi. Vaqt tugaganda test avtomatik yakunlanadi.',
+                    ? quiz == null
+                        ? "Vaqt hisoblanmaydi - xohlagan vaqtingizda davom "
+                            'ettirasiz. Test tanlangach tavsiya etilgan vaqt '
+                            '★ bilan belgilanadi.'
+                        : "Vaqt hisoblanmaydi - testni to'xtatib, keyin xohlagan "
+                            'vaqtingizda o\'sha joyidan davom ettirasiz. Limit '
+                            'kerak bo\'lsa, ${formatMinutes(_recommended!)} tavsiya '
+                            'etiladi.'
+                    : 'Vaqt tugaganda test avtomatik yakunlanadi.',
               ),
             ],
             if (_error != null) ...[
@@ -252,7 +262,7 @@ class _Header extends StatelessWidget {
               ),
               const SizedBox(height: 2),
               Text(
-                'Testni tanlang va vaqt limitini belgilang',
+                "Testni tanlang, xohlasangiz vaqt limiti qo'ying",
                 style: TextStyle(fontSize: 12.5, color: c.textMuted),
               ),
             ],
@@ -438,7 +448,10 @@ class _TimeChips extends StatelessWidget {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        if (option == recommended && !untimed && enabled) ...[
+                        // Tavsiya "Vaqtsiz" tanlangan paytda ham ko'rinadi:
+                        // u tanlovni emas, qaysi limit mos kelishini
+                        // bildiradi - izoh ham aynan shuni va'da qiladi.
+                        if (option == recommended && enabled) ...[
                           Icon(Icons.star_rounded, size: 14, color: star),
                           const SizedBox(width: 5),
                         ],

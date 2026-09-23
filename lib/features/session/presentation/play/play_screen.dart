@@ -11,6 +11,7 @@ import '../../../../core/widgets/quiz/question_view.dart';
 import '../../../../core/widgets/responsive.dart';
 import '../../../../core/widgets/state_views.dart';
 import '../../data/session_repository.dart';
+import '../unfinished_sessions.dart';
 import 'play_controller.dart';
 
 /// Test-taking screen for a running session (single or multiplayer).
@@ -59,6 +60,11 @@ class _PlayScreenState extends ConsumerState<PlayScreen> {
     final result = _controller.result;
     if (result != null && !_navigatedToResult) {
       _navigatedToResult = true;
+      // Bu test endi tugallanmaganlar orasida emas. Bosh sahifadagi ro'yxatni
+      // shu yerda bekor qilamiz: quyida pushReplacement bo'lgani uchun o'yin
+      // ekranini ochgan `push` hech qachon qaytmaydi va u yerdagi yangilash
+      // ishga tushmaydi.
+      ref.invalidate(unfinishedSessionsProvider);
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) context.pushReplacement('/session/${widget.sessionId}/result', extra: result);
       });
@@ -83,7 +89,8 @@ class _PlayScreenState extends ConsumerState<PlayScreen> {
         title: const Text('Testni yakunlaysizmi?'),
         content: Text(
           'Javob berilgan: ${c.answeredCount} / ${c.total}'
-          '${unanswered > 0 ? '\nJavobsiz qolgan: $unanswered ta' : ''}',
+          '${unanswered > 0 ? '\nJavobsiz qolgan: $unanswered ta' : ''}'
+          "\n\nYakunlangan testni qayta ishlab bo'lmaydi.",
         ),
         actions: [
           TextButton(
@@ -95,29 +102,87 @@ class _PlayScreenState extends ConsumerState<PlayScreen> {
     if (ok == true) await _controller.submit();
   }
 
+  /// What the student chose on the way out.
+  ///
+  /// A timed test only has two of these: its clock does not stop, so there is
+  /// no state to come back to and leaving is finishing.
   Future<void> _confirmLeave() async {
-    final leave = await showDialog<bool>(
+    final c = _controller;
+    final unanswered = c.total - c.answeredCount;
+    final progress = 'Javob berilgan: ${c.answeredCount} / ${c.total}'
+        '${unanswered > 0 ? '\nJavobsiz qolgan: $unanswered ta' : ''}';
+
+    if (c.hasTimer) {
+      final finish = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Testni yakunlaysizmi?'),
+          content: Text(
+            "Vaqtli testni to'xtatib turib bo'lmaydi - chiqsangiz u yakunlanadi "
+            'va natijangiz chiqadi.\n\n$progress',
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Qolish')),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              style: TextButton.styleFrom(foregroundColor: AppColors.error),
+              child: const Text('Yakunlash'),
+            ),
+          ],
+        ),
+      );
+      if (finish == true) await _controller.submit();
+      return;
+    }
+
+    final choice = await showDialog<_LeaveChoice>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Testdan chiqasizmi?'),
+        title: const Text("Testni to'xtatasizmi?"),
         content: Text(
-          _controller.hasTimer
-              ? "Javoblaringiz saqlanadi, lekin vaqt to'xtamaydi. "
-                  'Vaqt tugaganda test avtomatik yakunlanadi.'
-              : "Javoblaringiz saqlanadi. Bu testda vaqt hisoblanmaydi - "
-                  "xohlagan vaqtingizda shu joyidan davom ettirasiz.",
+          "Chiqib ketsangiz javoblaringiz saqlanadi va keyin shu joyidan davom "
+          "ettirasiz. Yakunlasangiz natijangiz chiqadi va testni qayta ishlab "
+          "bo'lmaydi.\n\n$progress",
         ),
+        actionsPadding: const EdgeInsets.fromLTRB(16, 4, 16, 14),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Qolish')),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(foregroundColor: AppColors.error),
-            child: const Text('Chiqish'),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Chiqib ketish - qaytarib bo'ladigan tanlov, shuning uchun
+              // ko'zga tashlanadigani o'sha. Yakunlash esa qaytarib
+              // bo'lmaydi va shoshib bosilmasligi kerak.
+              FilledButton(
+                onPressed: () => Navigator.pop(context, _LeaveChoice.leave),
+                style: FilledButton.styleFrom(minimumSize: const Size(0, 46)),
+                child: const Text('Chiqib ketish'),
+              ),
+              const SizedBox(height: 4),
+              TextButton(
+                onPressed: () => Navigator.pop(context, _LeaveChoice.finish),
+                style: TextButton.styleFrom(
+                  foregroundColor: AppColors.error,
+                  minimumSize: const Size(0, 44),
+                ),
+                child: const Text('Yakunlash'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, _LeaveChoice.stay),
+                style: TextButton.styleFrom(minimumSize: const Size(0, 44)),
+                child: const Text('Qolish'),
+              ),
+            ],
           ),
         ],
       ),
     );
-    if (leave == true && mounted) Navigator.of(context).pop();
+
+    if (choice == _LeaveChoice.finish) {
+      await _controller.submit();
+    } else if (choice == _LeaveChoice.leave && mounted) {
+      Navigator.of(context).pop();
+    }
   }
 
   void _openMap() {
@@ -305,6 +370,9 @@ class _UntimedChip extends StatelessWidget {
     );
   }
 }
+
+/// The way out of an untimed test.
+enum _LeaveChoice { stay, leave, finish }
 
 class _Banner extends StatelessWidget {
   const _Banner({required this.text});

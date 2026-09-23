@@ -34,7 +34,7 @@ Future<void> showResultDetailSheet(BuildContext context, {required HistoryItem i
       expand: false,
       // An abandoned test has no score, no topics and two rows of figures;
       // opening it at the full height left most of the sheet blank.
-      initialChildSize: item.isComplete ? 0.78 : 0.5,
+      initialChildSize: item.isFinished ? 0.78 : 0.5,
       maxChildSize: 0.95,
       builder: (_, controller) => _ResultDetailSheet(item: item, scrollController: controller),
     ),
@@ -52,7 +52,6 @@ class _ResultDetailSheet extends ConsumerWidget {
     final c = context.colors;
     final style = SubjectStyle.of(item.subject);
     final date = item.finishedAt ?? item.createdAt;
-    final minutes = item.durationMinutes;
     final tone = ResultRow.scoreColor(context, item.percent);
 
     return ListView(
@@ -104,30 +103,34 @@ class _ResultDetailSheet extends ConsumerWidget {
           ],
         ),
         _Divider(),
-        if (item.isComplete)
+        // Yakunlangan test - to'liq natija. Javobsiz qolgan savollar uni
+        // tugallanmagan qilmaydi: ular shunchaki noto'g'ri deb hisoblanadi va
+        // foizga kiradi.
+        if (item.isFinished)
           _Score(item: item, tone: tone)
         else
           const _Unfinished(),
         _Divider(),
         _Row(label: 'Savollar', value: '${item.totalQuestions ?? 0} ta'),
-        if (!item.isComplete)
-          _Row(
-            label: 'Javob berilgan',
-            value: '${item.answered} / ${item.totalQuestions ?? 0}',
-          ),
-        if (item.isComplete)
+        if (item.isFinished) ...[
           _Row(
             label: "To'g'ri javoblar",
             value: '${item.correctAnswers ?? 0} / ${item.totalQuestions ?? 0}',
           ),
-        if (minutes != null && minutes > 0)
-          _Row(label: 'Sarflangan vaqt', value: formatMinutes(minutes)),
+          if (item.unanswered > 0)
+            _Row(label: 'Javobsiz qolgan', value: '${item.unanswered} ta'),
+        ] else
+          _Row(
+            label: 'Javob berilgan',
+            value: '${item.answered} / ${item.totalQuestions ?? 0}',
+          ),
+        if (item.spentLabel case final spent?) _Row(label: 'Sarflangan vaqt', value: spent),
         if (date != null) _Row(label: 'Sana', value: formatDate(date)),
         if (item.isMultiplayer) ...[
           _Row(label: 'Ishtirokchilar', value: '${item.participantCount} kishi'),
           _Row(label: 'O‘rningiz', value: '${item.rank} / ${item.participantCount}'),
         ],
-        if (item.isComplete) _Topics(sessionId: item.sessionId),
+        if (item.isFinished) _Topics(sessionId: item.sessionId),
         const SizedBox(height: 18),
         Row(
           children: [
@@ -152,7 +155,7 @@ class _ResultDetailSheet extends ConsumerWidget {
             Expanded(
               flex: item.isMultiplayer ? 1 : 2,
               child: GradientButton(
-                label: item.isComplete ? 'Xatolar tahlili' : 'Testni ko‘rish',
+                label: item.isFinished ? 'Xatolar tahlili' : 'Testni ko‘rish',
                 icon: Icons.fact_check_outlined,
                 height: 48,
                 onPressed: () {

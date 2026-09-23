@@ -1,3 +1,4 @@
+import '../../../core/utils/formatters.dart';
 import '../../../core/utils/json_utils.dart';
 import '../../tests/domain/quiz.dart';
 
@@ -243,6 +244,7 @@ class HistoryItem {
     this.limitMinutes,
     this.deadlineAt,
     this.attemptFinished = true,
+    this.answeredCount,
   });
 
   final int sessionId;
@@ -273,22 +275,38 @@ class HistoryItem {
   /// leads to a `409`.
   final bool attemptFinished;
 
+  /// Answers stored so far, whether or not the attempt has been scored.
+  final int? answeredCount;
+
   /// Whether the student can pick this test back up.
   ///
-  /// Three things have to hold: the attempt was never closed, the session is
-  /// still running, and its window has not passed. An untimed session has no
-  /// window, so it stays open until it is finished.
+  /// Only an untimed test. Choosing a limit is choosing to sit the test in one
+  /// go: the clock does not stop when the student leaves, so coming back to it
+  /// later is not resuming, it is spending someone else's minutes. A timed
+  /// session that was walked away from simply runs out and is scored on the
+  /// answers already stored.
   bool get canResume {
     if (attemptFinished || status != 'running') return false;
-    final end = deadlineAt;
-    return end == null || end.isAfter(DateTime.now().toUtc());
+    return limitMinutes == null && deadlineAt == null;
   }
 
-  /// Unfinished sessions come back with null counts.
-  bool get isFinished => correctAnswers != null && totalQuestions != null;
+  /// Whether this row is a result at all.
+  ///
+  /// Null counts used to be the only sign of an unfinished session. They are
+  /// no longer: answers are stored as they are given, so a test still in
+  /// progress has an attempt row — with zeroes, because it is only scored at
+  /// the end. [attemptFinished] is what separates the two now.
+  bool get isFinished =>
+      attemptFinished && correctAnswers != null && totalQuestions != null;
 
   /// Answers the student actually gave.
-  int get answered => (correctAnswers ?? 0) + (wrongAnswers ?? 0);
+  ///
+  /// A scored attempt splits them into right and wrong. One still in progress
+  /// has neither — it is scored only when it is handed in — so the stored
+  /// count is the only thing that knows.
+  int get answered => attemptFinished
+      ? (correctAnswers ?? 0) + (wrongAnswers ?? 0)
+      : (answeredCount ?? 0);
 
   /// Whether every question was answered.
   ///
@@ -302,6 +320,26 @@ class HistoryItem {
     return answered >= total;
   }
 
+  /// How much of the test has been answered, 0..1.
+  ///
+  /// Not the score: an attempt still in progress has no score, and this is what
+  /// the home carousel fills its bar with.
+  double get progress {
+    final total = totalQuestions ?? 0;
+    if (total == 0) return 0;
+    return (answered / total).clamp(0.0, 1.0);
+  }
+
+  /// Questions left blank in a scored attempt.
+  ///
+  /// They count as wrong — the percentage already reflects them — but the
+  /// student is owed the difference between not knowing and not reaching.
+  int get unanswered {
+    final total = totalQuestions ?? 0;
+    if (!isFinished || total == 0) return 0;
+    return (total - answered).clamp(0, total);
+  }
+
   bool get isMultiplayer => (participantCount ?? 1) > 1;
 
   /// Score in percent (0..100), 0 when unfinished.
@@ -311,12 +349,24 @@ class HistoryItem {
   }
 
   /// Minutes between session creation and finish (both UTC), or null.
-  int? get durationMinutes {
+  int? get durationMinutes => spent?.inMinutes;
+
+  /// How long the attempt took, or null when it has not been scored.
+  Duration? get spent {
     final start = createdAt;
     final end = finishedAt;
     if (!isFinished || start == null || end == null) return null;
-    final minutes = end.difference(start).inMinutes;
-    return minutes < 0 ? null : minutes;
+    final spent = end.difference(start);
+    return spent.isNegative ? null : spent;
+  }
+
+  /// Time spent, worded. A test handed in after forty seconds still took
+  /// time, and rounding that to "0 daqiqa" reads as though it was not sat.
+  String? get spentLabel {
+    final spent = this.spent;
+    if (spent == null) return null;
+    if (spent.inMinutes < 1) return '${spent.inSeconds} soniya';
+    return formatMinutes(spent.inMinutes);
   }
 
   factory HistoryItem.fromJson(Json json) => HistoryItem(
@@ -334,6 +384,7 @@ class HistoryItem {
         limitMinutes: asInt(json['duration_minutes']),
         deadlineAt: parseUtcDate(json['deadline_at']),
         attemptFinished: asBool(json['attempt_finished'], fallback: true),
+        answeredCount: asInt(json['answered_count']),
       );
 }
 

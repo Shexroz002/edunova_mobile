@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-
-
 import '../../core/network/api_exception.dart';
 import '../../core/router/app_router.dart';
 import '../../core/theme/app_colors.dart';
@@ -21,6 +19,8 @@ import 'widgets/competition_block.dart';
 import 'widgets/hello_row.dart';
 import 'widgets/play_hero.dart';
 import 'widgets/quick_actions.dart';
+import '../session/presentation/unfinished_sessions.dart';
+import 'widgets/unfinished_carousel.dart';
 import '../analytics/presentation/subject_list.dart';
 
 /// Student home: greeting, the one primary action, the secondary actions, the
@@ -63,7 +63,10 @@ class HomeScreen extends ConsumerWidget {
         actions: const [NotificationBell()],
       ),
       body: RefreshIndicator(
-        onRefresh: () async => ref.invalidate(subjectStatsProvider),
+        onRefresh: () async {
+          ref.invalidate(subjectStatsProvider);
+          ref.invalidate(unfinishedSessionsProvider);
+        },
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
           padding: EdgeInsets.fromLTRB(context.pagePadding, 12, context.pagePadding, 28),
@@ -77,6 +80,10 @@ class HomeScreen extends ConsumerWidget {
                     onCompleteProfile: () => context.push(Routes.profileEdit),
                   ),
                   const SizedBox(height: 12),
+                  // Boshlangan test yangisini boshlashdan ustun, shuning uchun
+                  // u hero'dan yuqorida. Tugallanmagani yo'q bo'lsa hech narsa
+                  // chizmaydi va sahifa bugungi ko'rinishida qoladi.
+                  const UnfinishedCarousel(),
                   PlayHero(
                     isFirstTest: firstTest,
                     onStart: () => _startTest(context),
