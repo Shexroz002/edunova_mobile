@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/network/api_exception.dart';
+import '../../../core/router/app_router.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/page_header.dart';
 import '../../../core/widgets/quiz/badges.dart';
@@ -10,6 +12,7 @@ import '../../../core/widgets/quiz/question_map.dart';
 import '../../../core/widgets/quiz/question_view.dart';
 import '../../../core/widgets/responsive.dart';
 import '../../../core/widgets/state_views.dart';
+import '../../solution/presentation/mistake_sheet.dart';
 import '../data/session_repository.dart';
 import '../domain/session_models.dart';
 
@@ -256,6 +259,34 @@ class _ReviewBodyState extends State<_ReviewBody> {
             ],
           ),
         ),
+        if (item.isAnswered) ...[
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            onPressed: item.isCorrect || item.selected == null
+                ? () => context.push(Routes.questionSolutionPath(
+                      item.question.id,
+                      chosen: item.selected,
+                      subject: item.question.subject,
+                    ))
+                : () => showMistakeSheet(
+                      context,
+                      questionId: item.question.id,
+                      chosen: item.selected!,
+                      subject: item.question.subject,
+                    ),
+            style: OutlinedButton.styleFrom(
+              minimumSize: const Size.fromHeight(46),
+              side: BorderSide(color: context.colors.border, width: 1.5),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              foregroundColor: context.colors.textPrimary,
+            ),
+            icon: Text(item.isCorrect ? '📖' : '🤔', style: const TextStyle(fontSize: 15)),
+            label: Text(
+              item.isCorrect ? 'Yechimini ko‘rish' : 'Qayerda adashdim?',
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+            ),
+          ),
+        ],
       ],
     );
   }

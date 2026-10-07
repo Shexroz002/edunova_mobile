@@ -1,0 +1,23 @@
+[
+ {
+  "id": 6,
+  "status": "failed",
+  "subject": "matematika",
+  "text": "Toʻgʻri to'rtburchakni tomonlari 4 va 5 uni yuzini toping.",
+  "created_at": "2026-10-05T11:51:37.629425Z"
+ },
+ {
+  "id": 4,
+  "status": "done",
+  "subject": "matematika",
+  "text": "Do'kon 3 kunda jami 175 kg kartoshka sotdi. Agar ikkinchi kun uchinchi kunga nisbatan 1,5 marta ko'p, birinchi kun esa ikkinchi kunga nisbatan 2,4 marta kam kartoshka sotgan bo'lsa, do'kon birinchi ku",
+  "created_at": "2026-10-05T11:04:23.635633Z"
+ },
+ {
+  "id": 1,
+  "status": "done",
+  "subject": "fizika",
+  "text": "Massasi 2 kg bo'lgan jism 5 m/s² tezlanish bilan harakatlanmoqda. Unga ta'sir etuvchi kuch nechaga teng?",
+  "created_at": "2026-10-05T10:57:45.134429Z"
+ }
+]

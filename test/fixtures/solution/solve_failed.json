@@ -1,0 +1,11 @@
+{
+ "id": 6,
+ "status": "failed",
+ "subject": "matematika",
+ "text": "Toʻgʻri to'rtburchakni tomonlari 4 va 5 uni yuzini toping.",
+ "image_url": null,
+ "solution": null,
+ "message": "Hozir yechib bo‘lmadi. Birozdan keyin qayta urinib ko‘ring.",
+ "retryable": true,
+ "created_at": "2026-10-05T11:51:37.629425Z"
+}

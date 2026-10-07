@@ -16,7 +16,9 @@ import '../competition/presentation/join_code_sheet.dart';
 import '../notifications/presentation/widgets/notification_bell.dart';
 import '../tests/presentation/start_test_sheet.dart';
 import 'widgets/competition_block.dart';
+import '../mistakes/data/mistakes_repository.dart';
 import 'widgets/hello_row.dart';
+import 'widgets/mistakes_row.dart';
 import 'widgets/play_hero.dart';
 import 'widgets/quick_actions.dart';
 import '../session/presentation/unfinished_sessions.dart';
@@ -54,6 +56,9 @@ class HomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(currentUserProvider);
     final subjects = ref.watch(subjectStatsProvider);
+    // Hidden only while the bank is empty: the row is the only way into it, so
+    // dropping it on a quiet day would make the screen unreachable.
+    final bank = ref.watch(mistakeOverviewProvider).valueOrNull;
     // No subject has been answered yet, so no test has been taken.
     final firstTest = subjects.valueOrNull?.isEmpty ?? false;
 
@@ -88,6 +93,13 @@ class HomeScreen extends ConsumerWidget {
                     isFirstTest: firstTest,
                     onStart: () => _startTest(context),
                   ),
+                  if (bank != null && !bank.isEmpty) ...[
+                    const SizedBox(height: 12),
+                    MistakesRow(
+                      overview: bank,
+                      onTap: () => context.push(Routes.mistakes),
+                    ),
+                  ],
                   const SizedBox(height: 12),
                   QuickActions(
                     actions: [
@@ -108,6 +120,12 @@ class HomeScreen extends ConsumerWidget {
                         color: AppColors.warning,
                         label: 'Natijalar',
                         onTap: () => context.push(Routes.results),
+                      ),
+                      QuickAction(
+                        icon: Icons.photo_camera_outlined,
+                        color: AppColors.sky,
+                        label: 'Masala yechish',
+                        onTap: () => context.push(Routes.solve),
                       ),
                     ],
                   ),

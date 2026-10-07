@@ -1,0 +1,182 @@
+{
+ "status": "ready",
+ "explanation_id": 5,
+ "question_text": "Aritmetik progressiyaning 5-hadi 15 ga, 10-hadi esa 30 ga teng. Bu progressiyaning ayirmasini toping.",
+ "correct_option": "B",
+ "model_option": null,
+ "student_may_be_right": false,
+ "solution": {
+  "find": [
+   {
+    "unit": "",
+    "label": "ayirma",
+    "symbol": "d"
+   }
+  ],
+  "kind": "math",
+  "plan": [
+   "Aritmetik progressiya formulasini eslaymiz.",
+   "Berilgan hadlar uchun tenglamalar tuzamiz.",
+   "Tenglamalar sistemasini yechamiz.",
+   "Ayirmani topamiz."
+  ],
+  "tape": null,
+  "asked": "Aritmetik progressiyaning beshinchi hadi $15$ ga, o‘ninchi hadi esa $30$ ga teng. Biz bu progressiyaning ayirmasini topishimiz kerak.",
+  "check": null,
+  "given": [],
+  "steps": [
+   {
+    "say": "Avval, aritmetik progressiyaning $n$-chi hadini topish formulasini eslab olamiz. Bu formula bizga istalgan hadni birinchi had va ayirma orqali ifodalashga yordam beradi.",
+    "tip": null,
+    "rule": null,
+    "board": [
+     {
+      "tex": "a_n = a_1 + (n-1)d",
+      "role": "formula"
+     }
+    ],
+    "title": "Aritmetik progressiya formulasini eslaymiz",
+    "simpler": [
+     "Aritmetik progressiya (ketma-ket kelgan sonlar orasidagi farq bir xil bo‘lgan sonlar ketma-ketligi) ning $n$-chi hadi $a_n$ ni topish uchun, birinchi had $a_1$ ga $(n-1)$ va ayirma $d$ ning ko‘paytmasini qo‘shamiz."
+    ],
+    "summary": "$n$-chi had formulasi."
+   },
+   {
+    "say": "Endi berilgan $a_5$ va $a_{10}$ hadlari uchun formuladan foydalanib ikkita tenglama tuzamiz.",
+    "tip": null,
+    "rule": null,
+    "board": [
+     {
+      "tex": "a_5 = a_1 + (5-1)d",
+      "role": "step"
+     },
+     {
+      "tex": "\\hla{15} = a_1 + 4d",
+      "role": "formula"
+     },
+     {
+      "tex": "a_{10} = a_1 + (10-1)d",
+      "role": "step"
+     },
+     {
+      "tex": "\\hlb{30} = a_1 + 9d",
+      "role": "formula"
+     }
+    ],
+    "title": "Berilgan hadlar uchun tenglamalar tuzamiz",
+    "simpler": [
+     "Beshinchi had $a_5$ ni topish uchun $n$ o‘rniga beshni qo‘yamiz: $a_5 = a_1 + (5-1)d = a_1 + 4d$.",
+     "O‘ninchi had $a_{10}$ ni topish uchun $n$ o‘rniga o‘nni qo‘yamiz: $a_{10} = a_1 + (10-1)d = a_1 + 9d$."
+    ],
+    "summary": "Ikkita tenglama tuzdik."
+   },
+   {
+    "say": "Bizda ikkita noma'lum ($a_1$ va $d$) va ikkita tenglama bor, shuning uchun bu sistemani yechishimiz mumkin. $d$ ni topish uchun ikkinchi tenglamadan birinchi tenglamani ayiramiz.",
+    "tip": "Tenglamalarni ayirganda har bir hadning ishorasini to‘g‘ri o‘zgartirishni unutmang.",
+    "rule": null,
+    "board": [
+     {
+      "tex": "(a_1 + 9d) - (a_1 + 4d) = \\hlb{30} - \\hla{15}",
+      "role": "step"
+     },
+     {
+      "tex": "a_1 + 9d - a_1 - 4d = 15",
+      "role": "step"
+     },
+     {
+      "tex": "5d = 15",
+      "role": "result"
+     }
+    ],
+    "title": "Tenglamalar sistemasini yechamiz",
+    "simpler": [
+     "Ikkinchi tenglama $a_1 + 9d = 30$ dan birinchi tenglama $a_1 + 4d = 15$ ni ayiramiz.",
+     "Chap tomonda $a_1$ lar qisqaradi, $9d - 4d = 5d$ qoladi.",
+     "O‘ng tomonda $30 - 15 = 15$ bo‘ladi.",
+     "Natijada $5d = 15$ tenglamasini olamiz."
+    ],
+    "summary": "$5d = 15$."
+   },
+   {
+    "say": "Endi $d$ ni topish uchun $5d = 15$ tenglamasini yechamiz.",
+    "tip": null,
+    "rule": null,
+    "board": [
+     {
+      "tex": "d = \\frac{15}{5}",
+      "role": "step"
+     },
+     {
+      "tex": "d = 3",
+      "role": "result"
+     }
+    ],
+    "title": "Ayirmani topamiz",
+    "simpler": [
+     "$5d = 15$ tenglamasida $d$ ni topish uchun o‘n beshni beshga bo‘lamiz.",
+     "$15 \\div 5 = 3$."
+    ],
+    "summary": "Ayirma $d=3$."
+   }
+  ],
+  "answer": {
+   "tex": "d = 3",
+   "unit": null,
+   "value": "3",
+   "words": "uch"
+  },
+  "values": [
+   {
+    "name": "a_5",
+    "color": 1,
+    "label": "beshinchi had",
+    "value": "15"
+   },
+   {
+    "name": "a_10",
+    "color": 2,
+    "label": "o‘ninchi had",
+    "value": "30"
+   }
+  ],
+  "formula": {
+   "tex": "a_n = a_1 + (n-1)d",
+   "name": "Aritmetik progressiyaning n-chi hadi formulasi",
+   "legend": [
+    {
+     "unit": "",
+     "symbol": "a_n",
+     "meaning": "n-chi had"
+    },
+    {
+     "unit": "",
+     "symbol": "a_1",
+     "meaning": "birinchi had"
+    },
+    {
+     "unit": "",
+     "symbol": "n",
+     "meaning": "hadning tartib raqami"
+    },
+    {
+     "unit": "",
+     "symbol": "d",
+     "meaning": "progressiya ayirmasi"
+    }
+   ]
+  },
+  "shortcut": null,
+  "real_life": null,
+  "problem_ok": true,
+  "problem_note": null
+ },
+ "hint": {
+  "tip": "Tenglamalarni ayirishda barcha hadlarni diqqat bilan tekshiring.",
+  "why": "Ikkinchi tenglamadan birinchi tenglamani ayirganda, o‘ng tomondagi sonlarni to‘g‘ri ayirish kerak edi: $30 - 15 = 15$.",
+  "option": "A",
+  "headline": "Siz hisoblashda kichik xatoga yo‘l qo‘ygansiz.",
+  "right_tex": "5d = 15",
+  "wrong_tex": "5d = 10"
+ },
+ "message": null
+}

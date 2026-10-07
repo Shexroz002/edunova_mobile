@@ -1,0 +1,153 @@
+{
+ "id": 1,
+ "status": "done",
+ "subject": "fizika",
+ "text": "Massasi 2 kg bo'lgan jism 5 m/s² tezlanish bilan harakatlanmoqda. Unga ta'sir etuvchi kuch nechaga teng?",
+ "image_url": null,
+ "solution": {
+  "find": [
+   {
+    "unit": "N",
+    "label": "Kuch",
+    "symbol": "F"
+   }
+  ],
+  "kind": "physics",
+  "plan": [
+   "Berilgan qiymatlarni aniqlaymiz",
+   "Nyutonning ikkinchi qonunini qo‘llaymiz",
+   "Qiymatlarni formulaga qo‘yamiz",
+   "Kiritilgan qiymatlarni hisoblaymiz"
+  ],
+  "tape": null,
+  "asked": "Massasi $2$ kg bo‘lgan jism $5$ m/s² tezlanish bilan harakatlansa, unga ta'sir etuvchi kuchni topishimiz kerak.",
+  "check": null,
+  "given": [
+   {
+    "unit": "kg",
+    "color": 1,
+    "label": "Jism massasi",
+    "value": "2",
+    "symbol": "m"
+   },
+   {
+    "unit": "m/s²",
+    "color": 2,
+    "label": "Tezlanish",
+    "value": "5",
+    "symbol": "a"
+   }
+  ],
+  "steps": [
+   {
+    "say": "Avvalambor, masalada berilgan qiymatlarni aniqlab olamiz. Bu bizga qaysi formuladan foydalanishni tushunishga yordam beradi.",
+    "tip": null,
+    "board": [
+     {
+      "tex": "\\text{Massasi } m = \\hla{2 \\text{ kg}}",
+      "role": "step"
+     },
+     {
+      "tex": "\\text{Tezlanishi } a = \\hlb{5 \\text{ m/s}^2}",
+      "role": "step"
+     }
+    ],
+    "title": "Berilgan qiymatlarni aniqlash",
+    "simpler": [
+     "Bizga berilgan massani topamiz: u ikki (2) kilogrammga teng.",
+     "Tezlanishni topamiz: u besh (5) metr/sekund kvadratga teng."
+    ],
+    "summary": "Berilganlar: $m=2$ kg, $a=5$ m/s²"
+   },
+   {
+    "say": "Jismga ta'sir etuvchi kuchni topish uchun Nyutonning ikkinchi qonunidan foydalanamiz. Bu qonun kuch, massa va tezlanish o‘rtasidagi bog‘liqlikni ko‘rsatadi.",
+    "tip": null,
+    "board": [
+     {
+      "tex": "F = m \\cdot a",
+      "role": "formula"
+     }
+    ],
+    "title": "Nyutonning ikkinchi qonunini qo‘llash",
+    "simpler": [
+     "Biz kuchni topish uchun Nyutonning ikkinchi qonuni formulasidan foydalanamiz.",
+     "Bu formula kuch (F) massani (m) tezlanishga (a) ko‘paytirishga teng ekanligini bildiradi."
+    ],
+    "summary": "Formula: $F = ma$"
+   },
+   {
+    "say": "Endi biz aniqlagan berilgan qiymatlarni formulaga qo‘yamiz. Bu bizga hisoblashni boshlash imkonini beradi.",
+    "tip": null,
+    "board": [
+     {
+      "tex": "F = \\hla{2 \\text{ kg}} \\cdot \\hlb{5 \\text{ m/s}^2}",
+      "role": "step"
+     }
+    ],
+    "title": "Qiymatlarni formulaga qo‘yish",
+    "simpler": [
+     "Massaning qiymati ikki (2) kilogrammni formuladagi 'm' o‘rniga qo‘yamiz.",
+     "Tezlanishning qiymati besh (5) metr/sekund kvadratni formuladagi 'a' o‘rniga qo‘yamiz.",
+     "Shunda formula $F = 2 \\text{ kg} \\cdot 5 \\text{ m/s}^2$ ko‘rinishiga keladi."
+    ],
+    "summary": "Qiymatlarni qo‘yish"
+   },
+   {
+    "say": "Endi kuchni topish uchun ko‘paytirish amalini bajaramiz. Natijani Nyuton (N) birligida ifodalaymiz.",
+    "tip": "Kuch birligi kilogramm-metr/sekund kvadratga teng bo‘lib, u Nyuton (N) deb ataladi.",
+    "rule": null,
+    "board": [
+     {
+      "tex": "F = 10 \\text{ kg} \\cdot \\text{m/s}^2",
+      "role": "step"
+     },
+     {
+      "tex": "F = 10 \\text{ N}",
+      "role": "result"
+     }
+    ],
+    "title": "Kiritilgan qiymatlarni hisoblash",
+    "simpler": [
+     "Ikki (2) ni besh (5) ga ko‘paytiramiz: $2 \\cdot 5 = 10$.",
+     "Natija o‘n (10) bo‘ladi."
+    ],
+    "summary": "Kuch $F = 10$ N"
+   }
+  ],
+  "answer": {
+   "tex": "F = 10 \\text{ N}",
+   "unit": "N",
+   "value": "10",
+   "words": "o‘n Nyuton"
+  },
+  "values": [],
+  "formula": {
+   "tex": "F = m \\cdot a",
+   "name": "Nyutonning ikkinchi qonuni",
+   "legend": [
+    {
+     "unit": "N (Nyuton)",
+     "symbol": "F",
+     "meaning": "Kuch"
+    },
+    {
+     "unit": "kg (kilogramm)",
+     "symbol": "m",
+     "meaning": "Jism massasi"
+    },
+    {
+     "unit": "m/s² (metr/sekund kvadrat)",
+     "symbol": "a",
+     "meaning": "Tezlanish"
+    }
+   ]
+  },
+  "shortcut": null,
+  "real_life": "10 N kuch taxminan 1 kilogramm massali narsani ko‘tarish uchun kerak bo‘ladigan kuchga teng.",
+  "problem_ok": true,
+  "problem_note": null
+ },
+ "message": null,
+ "retryable": false,
+ "created_at": "2026-10-05T10:57:45.134429Z"
+}

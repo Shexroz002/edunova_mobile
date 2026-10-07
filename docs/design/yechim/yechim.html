@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="uz"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Masala yechimi</title>
+<style>
+:root{--brand:#6366F1;--bl:#818CF8;--vi:#8B5CF6;--ok:#22C55E;--okt:#4ADE80;--err:#EF4444;--errt:#F87171;--warn:#F59E0B;--warnt:#FBBF24;
+--bg:#0F172A;--card:#1E293B;--inner:#0B1324;--bd:#334155;--t1:#F8FAFC;--t2:#CBD5E1;--t3:#94A3B8;--page:#070B16;
+--v1:#38BDF8;--v2:#C4B5FD;--v3:#F472B6}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--page);color:var(--t1);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,sans-serif;
+padding:28px 16px 64px;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1420px;margin:0 auto}
+h1{font-size:26px;font-weight:800;letter-spacing:-.5px;margin-bottom:8px}
+.sub{color:var(--t3);font-size:13.5px;line-height:1.65;max-width:900px;margin-bottom:14px}
+.sub b{color:var(--t2)}
+.rules{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:28px;max-width:1100px}
+.rule{font-size:12px;color:var(--t2);background:#0F172A;border:1px solid #1E293B;border-radius:10px;padding:7px 11px}
+.rule b{color:var(--bl)}
+.grid{display:flex;flex-wrap:wrap;gap:22px}
+.col{display:flex;flex-direction:column;gap:9px}
+.cap{font-size:11px;font-weight:800;letter-spacing:.9px;color:var(--bl);text-transform:uppercase}
+.note{font-size:11.5px;color:var(--t3);line-height:1.55;max-width:360px}
+.note b{color:var(--t2);font-weight:700}
+.ph{width:360px;height:780px;background:var(--bg);border:1px solid var(--bd);border-radius:26px;overflow:hidden;
+display:flex;flex-direction:column;box-shadow:0 18px 50px rgba(0,0,0,.5);position:relative}
+.status{height:30px;display:flex;align-items:center;justify-content:space-between;padding:0 18px;font-size:10.5px;color:var(--t3);flex:none}
+.bar{height:50px;display:flex;align-items:center;gap:12px;padding:0 16px;flex:none}
+.bar .ttl{font-size:17px;font-weight:800;letter-spacing:-.3px;flex:1}
+.back{width:24px;color:var(--t2);font-size:19px;line-height:1}
+.prog{padding:0 16px 10px;flex:none}
+.prog .lbl{display:flex;justify-content:space-between;font-size:11.5px;font-weight:700;color:var(--t3);margin-bottom:7px}
+.prog .lbl b{color:var(--t1)}
+.seg{display:flex;gap:5px}.seg i{flex:1;height:5px;border-radius:9px;background:#243049}
+.seg i.on{background:var(--brand)}.seg i.now{background:linear-gradient(90deg,var(--brand),var(--vi))}
+.body{flex:1;overflow:hidden;padding:4px 16px 14px;display:flex;flex-direction:column;gap:10px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:14px}
+.sec{font-size:10.5px;font-weight:800;letter-spacing:.8px;color:var(--t3);text-transform:uppercase}
+.btn{height:52px;border-radius:15px;background:linear-gradient(135deg,var(--brand),var(--vi));display:flex;align-items:center;
+justify-content:center;gap:8px;font-size:15px;font-weight:800;color:#fff;flex:1}
+.btn.ghost{background:transparent;border:1.5px solid var(--bd);color:var(--t1);flex:none;padding:0 16px;font-size:14px}
+.acts{display:flex;gap:9px}
+.spacer{flex:1}
+.pill{height:24px;padding:0 10px;border-radius:999px;display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:800}
+
+/* teacher voice + board */
+.say{font-size:14.5px;line-height:1.55;color:var(--t1)}
+.say b{font-weight:800}
+.board{background:var(--inner);border:1px solid var(--bd);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:9px}
+.bl{font-family:'Cambria Math','STIX Two Math','Latin Modern Math',Georgia,serif;font-size:20px;letter-spacing:.2px;
+display:flex;align-items:center;flex-wrap:wrap;gap:0 5px;min-height:28px}
+.bl.f{color:var(--t3);font-size:18px}
+.bl.res{font-weight:700}
+.bl .eq{color:var(--t3)}
+.v1{color:var(--v1);font-weight:700}.v2{color:var(--v2);font-weight:700}.v3{color:var(--v3);font-weight:700}
+.fr{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;font-size:.78em;line-height:1.12;margin:0 2px}
+.fr>span:first-child{padding:0 3px 2px}.fr>span:last-child{border-top:1.6px solid currentColor;padding:2px 3px 0}
+.stepnum{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--brand),var(--vi));color:#fff;
+display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;flex:none}
+.sh{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.sh .t{font-size:16px;font-weight:800;letter-spacing:-.25px}
+.tip{display:flex;gap:9px;align-items:flex-start;padding:10px 12px;border-radius:12px;background:rgba(245,158,11,.10);
+border:1px solid rgba(245,158,11,.35);font-size:13px;line-height:1.5;color:var(--t1)}
+.tip .ic{font-size:15px;line-height:1.3}
+.simple{border-radius:14px;padding:12px 13px;background:rgba(56,189,248,.08);border:1.5px solid rgba(56,189,248,.45);
+display:flex;flex-direction:column;gap:7px}
+.simple .h{font-size:12px;font-weight:800;color:var(--v1);letter-spacing:.2px}
+.simple .ln{font-size:13.5px;line-height:1.5;color:var(--t1)}
+.done{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:12px;background:rgba(34,197,94,.07);
+border:1px solid rgba(34,197,94,.25)}
+.done .ck{width:22px;height:22px;border-radius:50%;background:rgba(34,197,94,.2);color:var(--okt);display:flex;
+align-items:center;justify-content:center;font-size:12px;font-weight:800;flex:none}
+.done .tx{font-size:13px;color:var(--t2);flex:1}
+.done .m{font-family:'Cambria Math','STIX Two Math',Georgia,serif;font-size:15px;color:var(--t1)}
+.val{display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:13px;background:var(--card);border:1px solid var(--bd)}
+.val .let{width:32px;height:32px;border-radius:10px;display:flex;align-items:center;justify-content:center;
+font-family:'Cambria Math',Georgia,serif;font-size:19px;font-style:italic;font-weight:700;flex:none}
+.val .ds{flex:1;font-size:13.5px;color:var(--t2)}
+.val .nm{font-family:'Cambria Math',Georgia,serif;font-size:22px;font-weight:700}
+.plan{display:flex;flex-direction:column;gap:9px}
+.plan .it{display:flex;align-items:center;gap:11px;font-size:14.5px}
+.plan .n{width:26px;height:26px;border-radius:50%;border:1.5px solid var(--bd);display:flex;align-items:center;
+justify-content:center;font-size:12px;font-weight:800;color:var(--t2);flex:none}
+.ansbig{border-radius:20px;padding:18px 16px;text-align:center;background:linear-gradient(160deg,rgba(34,197,94,.14),rgba(34,197,94,.05));
+border:1.8px solid rgba(34,197,94,.5)}
+.tape{display:flex;height:44px;border-radius:10px;overflow:hidden;border:1.5px solid var(--bd)}
+.tape div{display:flex;align-items:center;justify-content:center;font-family:'Cambria Math',Georgia,serif;font-size:17px;font-weight:700}
+.light{--bg:#F8FAFC;--card:#FFF;--inner:#F1F5F9;--bd:#E2E8F0;--t1:#0F172A;--t2:#334155;--t3:#64748B;--v1:#0369A1;--v2:#7C3AED;--v3:#BE185D;--okt:#16A34A}
+.light .seg i{background:#E2E8F0}.light .seg i.on{background:var(--brand)}
+.light .tip{background:rgba(245,158,11,.10)}
+</style></head><body><div class="wrap">
+<h1>Masala yechimi — maktab o'quvchisi uchun</h1>
+<p class="sub">Har bir qadam ikki qismdan iborat: <b>o'qituvchi aytadi</b> — oddiy gap bilan nima qilyapmiz va nega;
+<b>doskada yoziladi</b> — formula va hisobning o'zi, hech qanday qadam tashlab ketilmasdan. Bu sinfdagi darsning
+aynan o'zi, shuning uchun o'quvchi uchun yangi narsa yo'q.</p>
+<div class="rules">
+  <div class="rule"><b>1.</b> Avval masala so'z bilan: «Bizdan nima so'ralyapti?» va reja</div>
+  <div class="rule"><b>2.</b> Hisob to'liq: 25 + 24 = 49 ham yoziladi</div>
+  <div class="rule"><b>3.</b> Masaladagi son doskada ham o'sha rangda</div>
+  <div class="rule"><b>4.</b> Har qadamda «Tushunmadim» — soddaroq tushuntiradi</div>
+  <div class="rule"><b>5.</b> Maktab usuli; qisqa yo'l — oxirida, ixtiyoriy</div>
+  <div class="rule"><b>6.</b> Ekranda bitta qadam; tugaganlari bir qatorga yig'iladi</div>
+  <div class="rule"><b>7.</b> Javob so'z bilan ham: «minus uchdan besh»</div>
+</div>
+<div class="grid">
+
+<!-- 1. MASALANI TUSHUNAMIZ -->
+<div class="col"><div class="cap">1 · Avval masalani tushunamiz</div>
+<div class="ph">
+<div class="status"><span>9:41</span><span>▮▮▮ 100</span></div>
+<div class="bar"><div class="back">←</div><div class="ttl">Yechim</div></div>
+<div class="body">
+  <div class="card" style="padding:14px 15px">
+    <div class="sec" style="margin-bottom:8px">Masala</div>
+    <div style="font-size:15.5px;line-height:1.6">
+      <span class="v1" style="font-size:17px">2</span>x² <span class="v2" style="font-size:17px">− 5</span>x
+      <span class="v3" style="font-size:17px">− 3</span> = 0 tenglamaning ildizlari x₁ va x₂ bo'lsa,
+      <span class="fr" style="font-size:.9em"><span>1</span><span>x₁</span></span> +
+      <span class="fr" style="font-size:.9em"><span>1</span><span>x₂</span></span> ni hisoblang.</div>
+  </div>
+
+  <div class="card" style="background:rgba(99,102,241,.08);border-color:rgba(99,102,241,.35)">
+    <div style="font-size:13px;font-weight:800;color:var(--bl);margin-bottom:6px">🎯 Bizdan nima so'ralyapti?</div>
+    <div class="say">Tenglamaning <b>ikkita yechimini</b> topamiz. Keyin 1 ni har biriga bo'lib, chiqqan sonlarni qo'shamiz.</div>
+  </div>
+
+  <div class="card">
+    <div style="font-size:13px;font-weight:800;margin-bottom:11px">🗺 Reja — 4 qadam</div>
+    <div class="plan">
+      <div class="it"><div class="n">1</div>Tenglamadagi sonlarni yozib olamiz</div>
+      <div class="it"><div class="n">2</div>Diskriminantni topamiz</div>
+      <div class="it"><div class="n">3</div>Ikkala yechimni topamiz</div>
+      <div class="it"><div class="n">4</div>Ifodani hisoblaymiz</div>
+    </div>
+  </div>
+  <div class="spacer"></div>
+  <div style="text-align:center;font-size:12.5px;color:var(--t3)">Biror qadam tushunarsiz bo'lsa — <b style="color:var(--t2)">«Tushunmadim»</b> ni bosing</div>
+  <div class="acts"><div class="btn">Boshladik →</div></div>
+</div></div>
+<div class="note"><b>Yechimdan oldin — masalaning o'zi.</b> Ko'p o'quvchi hisobda emas, «nima qilishim kerak» degan joyda
+to'xtaydi. Shuning uchun birinchi ekran hech narsa yechmaydi: savolni oddiy tilga o'giradi va yo'lni oldindan ko'rsatadi.
+Masaladagi sonlar shu yerdanoq rangda — keyin doskada ham shu rangda chiqadi.</div></div>
+
+<!-- 2. QADAM 1 -->
+<div class="col"><div class="cap">2 · Qadam: sonlarni yozib olamiz</div>
+<div class="ph">
+<div class="status"><span>9:41</span><span>▮▮▮ 100</span></div>
+<div class="bar"><div class="back">←</div><div class="ttl">Yechim</div></div>
+<div class="prog"><div class="lbl"><span><b>1-qadam</b> / 4</span><span>Sonlarni yozib olamiz</span></div>
+  <div class="seg"><i class="now"></i><i></i><i></i><i></i></div></div>
+<div class="body">
+  <div class="sh"><div class="stepnum">1</div><div class="t">Sonlarni yozib olamiz</div></div>
+  <div class="say">Kvadrat tenglama doim shu ko'rinishda bo'ladi:</div>
+  <div class="board"><div class="bl"><span class="v1">a</span>x² + <span class="v2">b</span>x + <span class="v3">c</span> = 0</div></div>
+  <div class="say">Bizning tenglamamizni unga solishtiramiz:</div>
+
+  <div class="val"><div class="let" style="background:rgba(56,189,248,.14);color:var(--v1)">a</div>
+    <div class="ds">x² oldidagi son</div><div class="nm v1">2</div></div>
+  <div class="val"><div class="let" style="background:rgba(196,181,253,.14);color:var(--v2)">b</div>
+    <div class="ds">x oldidagi son</div><div class="nm v2">−5</div></div>
+  <div class="val"><div class="let" style="background:rgba(244,114,182,.14);color:var(--v3)">c</div>
+    <div class="ds">yolg'iz turgan son</div><div class="nm v3">−3</div></div>
+
+  <div class="tip"><span class="ic">⚠️</span><span><b>Minus ham songa kiradi.</b> b = −5, 5 emas.
+  Ko'p xato aynan shu yerda boshlanadi.</span></div>
+  <div class="spacer"></div>
+  <div class="acts"><div class="btn ghost">🤔 Tushunmadim</div><div class="btn">Keyingisi →</div></div>
+</div></div>
+<div class="note"><b>Eng oddiy qadam ham yoziladi.</b> Tajribali o'quvchi uchun a, b, c ni aniqlash — qadam emas.
+Lekin kuchsiz o'quvchi xatoni aynan shu yerda qiladi: b ni −5 emas, 5 deb oladi va qolgan hamma hisob to'g'ri bo'lsa
+ham javob noto'g'ri chiqadi. Ogohlantirish xato <b>qilinishidan oldin</b> turadi.</div></div>
+
+<!-- 3. QADAM 2 + TUSHUNMADIM -->
+<div class="col"><div class="cap">3 · «Tushunmadim» bosilganda</div>
+<div class="ph">
+<div class="status"><span>9:41</span><span>▮▮▮ 100</span></div>
+<div class="bar"><div class="back">←</div><div class="ttl">Yechim</div></div>
+<div class="prog"><div class="lbl"><span><b>2-qadam</b> / 4</span><span>Diskriminant</span></div>
+  <div class="seg"><i class="on"></i><i class="now"></i><i></i><i></i></div></div>
+<div class="body">
+  <div class="done"><div class="ck">✓</div><div class="tx">Sonlar:</div>
+    <div class="m"><span class="v1">a = 2</span>, <span class="v2">b = −5</span>, <span class="v3">c = −3</span></div></div>
+
+  <div class="sh" style="margin:2px 0 0"><div class="stepnum">2</div><div class="t">Diskriminantni topamiz</div></div>
+  <div class="say"><b>Diskriminant</b> (D harfi bilan yoziladi) tenglamaning nechta yechimi borligini ko'rsatadi.</div>
+  <div class="board">
+    <div class="bl f">D = <span class="v2">b</span>² − 4 · <span class="v1">a</span> · <span class="v3">c</span></div>
+    <div class="bl">D = (<span class="v2">−5</span>)² − 4 · <span class="v1">2</span> · (<span class="v3">−3</span>)</div>
+    <div class="bl">D = 25 + 24</div>
+    <div class="bl res">D = 49</div>
+  </div>
+
+  <div class="simple">
+    <div class="h">💬 SODDAROQ TUSHUNTIRAMAN</div>
+    <div class="ln"><b>(−5)²</b> — bu −5 ni o'ziga ko'paytirish: (−5) · (−5) = <b>25</b>.</div>
+    <div class="ln"><b>4 · 2 · (−3)</b> = 8 · (−3) = <b>−24</b>.</div>
+    <div class="ln">25 dan −24 ni ayirish — 24 ni qo'shish bilan bir xil: 25 + 24 = <b>49</b>.</div>
+    <div class="pill" style="background:rgba(56,189,248,.16);color:var(--v1);align-self:flex-start;height:26px;margin-top:2px">
+      Qoida: minus × minus = plyus</div>
+  </div>
+  <div class="spacer"></div>
+  <div class="acts"><div class="btn">Tushundim, keyingisi →</div></div>
+</div></div>
+<div class="note"><b>«Tushunmadim» — o'quvchining o'z so'zi.</b> «Nega?» degan havola mavhum edi va kam bosilardi.
+«Tushunmadim» esa o'quvchi aynan his qilayotgan narsa. U o'sha qadamni <b>so'z bilan, raqamma-raqam</b> qaytadan
+tushuntiradi va qoidani bitta qatorga yig'adi. Tugmadagi matn ham o'zgaradi: «Tushundim, keyingisi».</div></div>
+
+<!-- 4. QADAM 4 -->
+<div class="col"><div class="cap">4 · Tugagan qadamlar yig'iladi</div>
+<div class="ph">
+<div class="status"><span>9:41</span><span>▮▮▮ 100</span></div>
+<div class="bar"><div class="back">←</div><div class="ttl">Yechim</div></div>
+<div class="prog"><div class="lbl"><span><b>4-qadam</b> / 4</span><span>Ifodani hisoblaymiz</span></div>
+  <div class="seg"><i class="on"></i><i class="on"></i><i class="on"></i><i class="now"></i></div></div>
+<div class="body">
+  <div class="done"><div class="ck">✓</div><div class="tx">Sonlar</div><div class="m"><span class="v1">2</span>, <span class="v2">−5</span>, <span class="v3">−3</span></div></div>
+  <div class="done"><div class="ck">✓</div><div class="tx">Diskriminant</div><div class="m">D = 49</div></div>
+  <div class="done"><div class="ck">✓</div><div class="tx">Yechimlar</div>
+    <div class="m">x₁ = 3, &nbsp;x₂ = <span class="fr" style="font-size:.85em"><span>−1</span><span>2</span></span></div></div>
+
+  <div class="sh" style="margin:4px 0 0"><div class="stepnum">4</div><div class="t">Ifodani hisoblaymiz</div></div>
+  <div class="say">Topilgan yechimlarni ifodaga qo'yamiz va hisoblaymiz:</div>
+  <div class="board">
+    <div class="bl"><span class="fr"><span>1</span><span>3</span></span> + <span class="fr"><span>1</span><span>−½</span></span></div>
+    <div class="bl"><span class="eq">=</span> <span class="fr"><span>1</span><span>3</span></span> − 2</div>
+    <div class="bl"><span class="eq">=</span> <span class="fr"><span>1</span><span>3</span></span> − <span class="fr"><span>6</span><span>3</span></span></div>
+    <div class="bl res"><span class="eq">=</span> <span class="fr"><span>−5</span><span>3</span></span></div>
+  </div>
+  <div class="tip" style="background:rgba(99,102,241,.08);border-color:rgba(99,102,241,.35)"><span class="ic">💡</span>
+  <span>Kasrlarni qo'shish yoki ayirish uchun maxraj bir xil bo'lishi kerak: <b>2 = 6/3</b></span></div>
+  <div class="spacer"></div>
+  <div class="acts"><div class="btn ghost">🤔 Tushunmadim</div><div class="btn">Javob →</div></div>
+</div></div>
+<div class="note"><b>Ekranda doim bitta qadam.</b> Tugaganlari bitta yashil qatorga yig'iladi — natijasi bilan.
+O'quvchi oldingi qadamga qaytib o'qishi shart emas, lekin «D = 49 qayerdan chiqdi?» desa, qatorni bosib ochadi.
+Uzun lenta bolani charchatadi; bitta qadam — bitta fikr.</div></div>
+
+<!-- 5. JAVOB -->
+<div class="col"><div class="cap">5 · Javob</div>
+<div class="ph">
+<div class="status"><span>9:41</span><span>▮▮▮ 100</span></div>
+<div class="bar"><div class="back">←</div><div class="ttl">Yechim</div></div>
+<div class="prog"><div class="lbl"><span><b>Tayyor!</b></span><span>4 qadam</span></div>
+  <div class="seg"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></div></div>
+<div class="body">
+  <div class="ansbig">
+    <div class="sec" style="color:var(--okt)">🎉 Javob</div>
+    <div style="font-family:'Cambria Math',Georgia,serif;font-size:40px;font-weight:700;margin:6px 0 2px">
+      −<span class="fr" style="font-size:.8em"><span>5</span><span>3</span></span></div>
+    <div style="font-size:13px;color:var(--t2)">o'qilishi: <b style="color:var(--t1)">minus uchdan besh</b></div>
+    <div class="pill" style="background:rgba(34,197,94,.18);color:var(--okt);margin-top:10px;height:26px">B variant</div>
+  </div>
+
+  <div class="card" style="padding:13px 14px">
+    <div style="font-size:13px;font-weight:800;margin-bottom:6px">🔍 Tekshirib ko'ramiz</div>
+    <div class="say" style="font-size:13.5px">x = 3 ni tenglamaga qo'yamiz:</div>
+    <div class="bl" style="font-size:17px;margin-top:4px">2 · 9 − 5 · 3 − 3 = 18 − 15 − 3 = <b style="color:var(--okt)">0 ✓</b></div>
+    <div class="say" style="font-size:12.5px;color:var(--t3);margin-top:4px">Nol chiqdi — demak, yechim to'g'ri topilgan.</div>
+  </div>
+
+  <div class="card" style="padding:12px 14px;display:flex;align-items:center;gap:11px">
+    <div style="font-size:20px">⚡</div>
+    <div style="flex:1"><div style="font-size:13.5px;font-weight:800">Qisqa yo'li ham bor</div>
+    <div style="font-size:12px;color:var(--t3)">Viyet teoremasi · qiziquvchilar uchun</div></div>
+    <div style="color:var(--t3)">›</div></div>
+
+  <div class="card" style="text-align:center;padding:13px 14px">
+    <div style="font-size:14px;font-weight:800">Tushunarli bo'ldimi?</div>
+    <div style="display:flex;gap:9px;margin-top:10px">
+      <div class="btn ghost" style="flex:1;height:44px">👍 Ha</div>
+      <div class="btn ghost" style="flex:1;height:44px">🤔 Unchalik</div></div>
+  </div>
+  <div class="spacer"></div>
+  <div class="acts"><div class="btn">O'xshash masala ishlash</div></div>
+</div></div>
+<div class="note"><b>Javob raqam bilan ham, so'z bilan ham.</b> «−5/3» ni ko'p o'quvchi qanday o'qishni bilmaydi;
+«minus uchdan besh» buni o'rgatadi. Tekshiruv bitta qator va nima uchun nol chiqishi kerakligi aytiladi.
+<b>Qisqa yo'l</b> (Viyet) oxirida, yopiq holda — kuchli o'quvchi ochadi, qolganini chalg'itmaydi.</div></div>
+
+<!-- 6. MATNLI MASALA -->
+<div class="col"><div class="cap">6 · Matnli masala — rasm bilan</div>
+<div class="ph">
+<div class="status"><span>9:41</span><span>▮▮▮ 100</span></div>
+<div class="bar"><div class="back">←</div><div class="ttl">Yechim</div></div>
+<div class="prog"><div class="lbl"><span><b>2-qadam</b> / 3</span><span>Rasmini chizamiz</span></div>
+  <div class="seg"><i class="on"></i><i class="now"></i><i></i></div></div>
+<div class="body">
+  <div class="done"><div class="ck">✓</div><div class="tx">Belgiladik: <b style="color:var(--t1)">1-kun = x</b> kg</div></div>
+
+  <div class="sh" style="margin:2px 0 0"><div class="stepnum">2</div><div class="t">Rasmini chizamiz</div></div>
+  <div class="say">Uchala kunni <b>x</b> orqali yozib, bitta chiziqqa joylaymiz:</div>
+
+  <div>
+    <div style="display:flex;justify-content:center;font-size:12.5px;font-weight:800;color:var(--t2);margin-bottom:4px">
+      ◀────── jami 175 kg ──────▶</div>
+    <div class="tape">
+      <div style="flex:1;background:rgba(56,189,248,.22);color:var(--v1)">x</div>
+      <div style="flex:2.4;background:rgba(196,181,253,.20);color:var(--v2);border-left:1.5px solid var(--bd)">2,4x</div>
+      <div style="flex:1.6;background:rgba(244,114,182,.18);color:var(--v3);border-left:1.5px solid var(--bd)">1,6x</div>
+    </div>
+    <div style="display:flex;font-size:11px;color:var(--t3);font-weight:700;margin-top:4px">
+      <div style="flex:1;text-align:center">1-kun</div><div style="flex:2.4;text-align:center">2-kun</div>
+      <div style="flex:1.6;text-align:center">3-kun</div></div>
+  </div>
+
+  <div class="card" style="padding:11px 13px;display:flex;flex-direction:column;gap:7px">
+    <div style="font-size:13px"><span class="v1">1-kun</span> — <b>x</b></div>
+    <div style="font-size:13px"><span class="v2">2-kun</span> — 1-kundan 2,4 marta ko'p → <b>2,4x</b></div>
+    <div style="font-size:13px"><span class="v3">3-kun</span> — 2-kundan 1,5 marta kam → 2,4x : 1,5 = <b>1,6x</b></div>
+  </div>
+  <div class="board" style="padding:10px 14px">
+    <div class="bl" style="font-size:18px"><span class="v1">x</span> + <span class="v2">2,4x</span> + <span class="v3">1,6x</span> = 175</div>
+    <div class="bl res" style="font-size:18px">5x = 175</div>
+  </div>
+  <div class="spacer"></div>
+  <div class="acts"><div class="btn ghost">🤔 Tushunmadim</div><div class="btn">Keyingisi →</div></div>
+</div></div>
+<div class="note"><b>Matnli masalada eng qiyini — so'zni tenglamaga aylantirish.</b> Shuning uchun avval rasm
+chiziladi: uch kun bitta chiziqda, jami tepasida. O'quvchi tenglamani <b>ko'rib</b> yozadi. 1-qadamda nega aynan
+1-kun x deb olingani ham aytilgan: «qolgan ikki kun unga bog'langan — hisob oson bo'ladi».</div></div>
+
+<!-- 7. FIZIKA -->
+<div class="col"><div class="cap">7 · Fizika · yorug' tema</div>
+<div class="ph light">
+<div class="status"><span>9:41</span><span>▮▮▮ 100</span></div>
+<div class="bar"><div class="back">←</div><div class="ttl">Yechim</div></div>
+<div class="prog"><div class="lbl"><span><b>2-qadam</b> / 2</span><span>Hisoblaymiz</span></div>
+  <div class="seg"><i class="on"></i><i class="now"></i></div></div>
+<div class="body">
+  <div style="display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--bd);border-radius:14px;overflow:hidden;background:var(--card)">
+    <div style="padding:11px 13px;border-right:1px solid var(--bd)">
+      <div class="sec" style="margin-bottom:7px">Berilgan</div>
+      <div class="bl" style="font-size:17px"><span class="v1">m = 2 kg</span></div>
+      <div class="bl" style="font-size:17px"><span class="v2">a = 5 m/s²</span></div></div>
+    <div style="padding:11px 13px"><div class="sec" style="margin-bottom:7px">Topish kerak</div>
+      <div class="bl" style="font-size:17px">F = ?</div></div>
+  </div>
+
+  <div class="done" style="background:rgba(34,197,94,.06)"><div class="ck">✓</div>
+    <div class="tx">Formula: <b style="color:var(--t1)">Nyutonning 2-qonuni</b></div></div>
+
+  <div class="card" style="padding:12px 14px;display:flex;flex-direction:column;gap:6px">
+    <div class="bl" style="font-size:24px;justify-content:center">F = <span class="v1">m</span> · <span class="v2">a</span></div>
+    <div style="font-size:12.5px;color:var(--t2);line-height:1.6;border-top:1px solid var(--bd);padding-top:8px">
+      <b>F</b> — kuch, nyutonda (N)<br><b class="v1">m</b> — massa, kilogrammda (kg)<br>
+      <b class="v2">a</b> — tezlanish (m/s²)</div>
+  </div>
+
+  <div class="sh" style="margin:4px 0 0"><div class="stepnum">2</div><div class="t">Sonlarni qo'yamiz</div></div>
+  <div class="say">Massa va tezlanishni formulaga qo'yib, ko'paytiramiz:</div>
+  <div class="board">
+    <div class="bl">F = <span class="v1">2 kg</span> · <span class="v2">5 m/s²</span></div>
+    <div class="bl res">F = 10 N</div>
+  </div>
+  <div class="tip" style="background:rgba(99,102,241,.07);border-color:rgba(99,102,241,.3)"><span class="ic">🏋️</span>
+  <span><b>Hayotda:</b> 10 N — taxminan 1 litr suvli shishani qo'lda ushlab turish uchun kerak bo'lgan kuch.</span></div>
+  <div class="spacer"></div>
+  <div class="acts"><div class="btn">Javob →</div></div>
+</div></div>
+<div class="note"><b>Darslikdagi shakl va formula kartasi.</b> «Berilgan / Topish kerak» — har bir o'quvchi maktabda
+shunday yozadi. Formula ostida <b>har bir harf nimani bildirishi va birligi</b> yoziladi — fizikada eng ko'p xato
+shu yerda. «Hayotda» kartasi javobga ma'no beradi: 10 N endi shunchaki raqam emas.</div></div>
+
+<!-- 8. XATOLARIM -->
+<div class="col"><div class="cap">8 · Xatolarim: «Qayerda adashdim?»</div>
+<div class="ph">
+<div class="status"><span>9:41</span><span>▮▮▮ 100</span></div>
+<div class="bar"><div class="back">←</div><div class="ttl">Takrorlash</div><div style="font-size:12px;color:var(--t3)">3 / 12</div></div>
+<div class="body" style="gap:8px">
+  <div style="font-size:14.5px;font-weight:700;line-height:1.45">2x² − 5x − 3 = 0 tenglamaning ildizlari x₁ va x₂ bo'lsa,
+  1/x₁ + 1/x₂ ni hisoblang.</div>
+  <div class="val" style="border-color:rgba(239,68,68,.55);background:rgba(239,68,68,.08)">
+    <div class="let" style="background:rgba(239,68,68,.16);color:var(--errt);font-style:normal;font-size:14px">C</div>
+    <div class="ds" style="color:var(--t1)">5/3</div><div style="font-size:12px;font-weight:800;color:var(--errt)">✕ siz</div></div>
+  <div class="val" style="border-color:rgba(34,197,94,.55);background:rgba(34,197,94,.08)">
+    <div class="let" style="background:rgba(34,197,94,.16);color:var(--okt);font-style:normal;font-size:14px">B</div>
+    <div class="ds" style="color:var(--t1)">−5/3</div><div style="font-size:12px;font-weight:800;color:var(--okt)">✓ to'g'ri</div></div>
+</div>
+<div style="position:absolute;left:0;right:0;bottom:0;top:282px;background:rgba(0,0,0,.45)"></div>
+<div style="position:absolute;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--bd);
+  border-radius:22px 22px 0 0;padding:12px 16px 18px;display:flex;flex-direction:column;gap:11px">
+  <div style="width:38px;height:4px;border-radius:9px;background:var(--bd);margin:0 auto"></div>
+  <div style="font-size:17px;font-weight:800;letter-spacing:-.3px">Qayerda adashdingiz?</div>
+  <div class="say">Siz deyarli to'g'ri yechgansiz — <b>faqat minus belgisi yo'qolgan.</b></div>
+
+  <div class="board" style="gap:8px">
+    <div style="display:flex;align-items:center;gap:10px"><div class="pill" style="background:rgba(34,197,94,.16);color:var(--okt);width:68px;justify-content:center">To'g'ri</div>
+      <div class="bl" style="font-size:18px"><span class="fr"><span>1</span><span>3</span></span> − 2 = <b style="color:var(--okt)">−<span class="fr"><span>5</span><span>3</span></span></b></div></div>
+    <div style="display:flex;align-items:center;gap:10px"><div class="pill" style="background:rgba(239,68,68,.16);color:var(--errt);width:68px;justify-content:center">Siz</div>
+      <div class="bl" style="font-size:18px"><b style="color:var(--errt)"><span class="fr"><span>5</span><span>3</span></span></b>
+      <span style="font-size:12px;color:var(--t3);font-family:Inter,sans-serif">← minus yo'q</span></div></div>
+  </div>
+
+  <div class="say" style="font-size:13.5px">Ikkinchi yechim <b>manfiy</b>: x₂ = −½. Shuning uchun 1 : (−½) = <b>−2</b> — bu ham manfiy.
+  Manfiy son qo'shilganda javob kichrayib, manfiy chiqadi.</div>
+  <div class="tip"><span class="ic">✋</span><span>Keyingi safar javobni tanlashdan oldin bir soniya to'xtang: <b>«ishorasi to'g'rimi?»</b></span></div>
+  <div style="font-size:11px;color:var(--t3);text-align:center">Bu xato ko'pincha shu sababdan chiqadi</div>
+  <div class="acts"><div class="btn">To'liq yechimni ko'rish</div></div>
+</div>
+</div>
+<div class="note"><b>Xatoni topish — yechimdan muhimroq.</b> O'quvchi C ni tanlagani ma'lum, demak «sizning xatoyingiz
+qayerda» deb <b>aniq</b> aytish mumkin. Birinchi gap dalda beradi («deyarli to'g'ri»), keyin to'g'ri va noto'g'ri
+yonma-yon turadi va farq ko'rsatiladi. Pastdagi kichik izoh halol: ilova o'quvchining fikrini ko'rmaydi, faqat
+ehtimolini aytadi.</div></div>
+
+</div></div></body></html>

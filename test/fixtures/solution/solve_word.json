@@ -1,0 +1,209 @@
+{
+ "id": 4,
+ "status": "done",
+ "subject": "matematika",
+ "text": "Do'kon 3 kunda jami 175 kg kartoshka sotdi. Agar ikkinchi kun uchinchi kunga nisbatan 1,5 marta ko'p, birinchi kun esa ikkinchi kunga nisbatan 2,4 marta kam kartoshka sotgan bo'lsa, do'kon birinchi kun necha kilogramm kartoshka sotgan?",
+ "image_url": null,
+ "solution": {
+  "find": [
+   {
+    "unit": "kg",
+    "label": "Birinchi kun sotilgan kartoshka",
+    "symbol": "K_1"
+   }
+  ],
+  "kind": "word",
+  "plan": [
+   "Uchinchi kun sotilgan kartoshka miqdorini belgilaymiz.",
+   "Boshqa kunlar uchun ifodalar tuzamiz.",
+   "Jami kartoshka uchun tenglama tuzamiz.",
+   "Tenglamani yechib, noma'lum $x$ ni topamiz.",
+   "Birinchi kun sotilgan kartoshka miqdorini hisoblaymiz."
+  ],
+  "tape": {
+   "parts": [
+    {
+     "expr": "x",
+     "label": "Uchinchi kun",
+     "weight": 1
+    },
+    {
+     "expr": "1{,}5x",
+     "label": "Ikkinchi kun",
+     "weight": 1.5
+    },
+    {
+     "expr": "0{,}625x",
+     "label": "Birinchi kun",
+     "weight": 0.625
+    }
+   ],
+   "total": "175"
+  },
+  "asked": "Do‘kon uch kunda jami $175$ kg kartoshka sotgan. Agar ikkinchi kun uchinchi kunga nisbatan $1{,}5$ marta ko‘p, birinchi kun esa ikkinchi kunga nisbatan $2{,}4$ marta kam kartoshka sotgan bo‘lsa, do‘kon birinchi kun necha kilogramm kartoshka sotganini topishimiz kerak.",
+  "check": {
+   "say": "Javobimizni tekshirish uchun har bir kundagi miqdorni hisoblab, ularni qo‘shamiz.",
+   "tex": "56 + 1{,}5 \\cdot 56 + 0{,}625 \\cdot 56 = 56 + 84 + 35 = 175"
+  },
+  "given": [],
+  "steps": [
+   {
+    "say": "Uchinchi kuni sotilgan kartoshka miqdorini $x$ bilan belgilaymiz, chunki boshqa kunlarning miqdori unga bog‘liq.",
+    "tip": null,
+    "rule": null,
+    "board": [
+     {
+      "tex": "\\text{Uchinchi kun: } x \\text{ kg}",
+      "role": "step"
+     }
+    ],
+    "title": "Noma'lum miqdorni belgilash",
+    "simpler": [
+     "$x$ harfi bilan noma'lum miqdorni belgilaymiz."
+    ],
+    "summary": "Uchinchi kun: $x$ kg"
+   },
+   {
+    "say": "Endi ikkinchi va birinchi kun sotilgan kartoshka miqdorini $x$ orqali ifodalaymiz.",
+    "tip": null,
+    "rule": null,
+    "board": [
+     {
+      "tex": "\\text{Ikkinchi kun: } \\hlb{1{,}5} \\cdot x \\text{ kg}",
+      "role": "step"
+     },
+     {
+      "tex": "\\text{Birinchi kun: } (\\hlb{1{,}5} \\cdot x) / \\hlc{2{,}4} \\text{ kg}",
+      "role": "step"
+     },
+     {
+      "tex": "\\text{Birinchi kun: } \\frac{\\hlb{1{,}5}}{\\hlc{2{,}4}} x \\text{ kg}",
+      "role": "step"
+     },
+     {
+      "tex": "\\text{Birinchi kun: } 0{,}625 x \\text{ kg}",
+      "role": "step"
+     }
+    ],
+    "title": "Boshqa kunlar uchun ifodalar tuzish",
+    "simpler": [
+     "Ikkinchi kun uchinchi kundan $1{,}5$ marta ko‘p sotgan, shuning uchun $x$ ni $1{,}5$ ga ko‘paytiramiz.",
+     "Birinchi kun ikkinchi kundan $2{,}4$ marta kam sotgan, shuning uchun ikkinchi kunning miqdorini $2{,}4$ ga bo‘lamiz.",
+     "$1{,}5$ ni $2{,}4$ ga bo‘lsak $0{,}625$ bo‘ladi."
+    ],
+    "summary": "Ikkinchi kun: $1{,}5x$, Birinchi kun: $0{,}625x$"
+   },
+   {
+    "say": "Jami sotilgan kartoshka miqdori $\\hla{175}$ kg bo‘lgani uchun, barcha kunlardagi miqdorlarni qo‘shib tenglama tuzamiz.",
+    "tip": null,
+    "rule": null,
+    "board": [
+     {
+      "tex": "x + \\hlb{1{,}5}x + 0{,}625x = \\hla{175}",
+      "role": "formula"
+     }
+    ],
+    "title": "Jami kartoshka uchun tenglama tuzish",
+    "simpler": [
+     "Uchta kun sotilgan kartoshka miqdorini qo‘shamiz: $x$ (uchinchi kun) plyus $1{,}5x$ (ikkinchi kun) plyus $0{,}625x$ (birinchi kun).",
+     "Jami $\\hla{yuz yetmish besh}$ kilogrammga teng."
+    ],
+    "summary": "$x + 1{,}5x + 0{,}625x = 175$"
+   },
+   {
+    "say": "Endi $x$ ning qiymatini topish uchun tenglamani soddalashtiramiz va yechamiz.",
+    "tip": null,
+    "rule": null,
+    "board": [
+     {
+      "tex": "x + 1{,}5x + 0{,}625x = 175",
+      "role": "step"
+     },
+     {
+      "tex": "2{,}5x + 0{,}625x = 175",
+      "role": "step"
+     },
+     {
+      "tex": "3{,}125x = 175",
+      "role": "step"
+     },
+     {
+      "tex": "x = \\frac{175}{3{,}125}",
+      "role": "step"
+     },
+     {
+      "tex": "x = 56",
+      "role": "result"
+     }
+    ],
+    "title": "Tenglamani yechish",
+    "simpler": [
+     "$x$ ning oldidagi sonlarni qo‘shamiz: $1$ plyus $1{,}5$ plyus $0{,}625$ teng $3{,}125$.",
+     "Keyin $\\hla{yuz yetmish besh}$ni $3{,}125$ ga bo‘lamiz.",
+     "Natija ellik olti bo‘ladi."
+    ],
+    "summary": "$x = 56$"
+   },
+   {
+    "say": "Bizdan birinchi kun sotilgan kartoshka miqdorini topish so‘ralgan, shuning uchun $x$ ning qiymatini tegishli ifodaga qo‘yamiz.",
+    "tip": null,
+    "rule": null,
+    "board": [
+     {
+      "tex": "\\text{Birinchi kun: } 0{,}625x",
+      "role": "step"
+     },
+     {
+      "tex": "\\text{Birinchi kun: } 0{,}625 \\cdot 56",
+      "role": "step"
+     },
+     {
+      "tex": "\\text{Birinchi kun: } 35 \\text{ kg}",
+      "role": "result"
+     }
+    ],
+    "title": "Birinchi kun sotilgan kartoshka miqdorini topish",
+    "simpler": [
+     "Birinchi kun sotilgan kartoshka miqdori $0{,}625x$ edi.",
+     "$x$ ning o‘rniga $56$ ni qo‘yamiz.",
+     "$0{,}625$ ni $56$ ga ko‘paytirsak o‘ttiz besh bo‘ladi."
+    ],
+    "summary": "Birinchi kun: 35 kg"
+   }
+  ],
+  "answer": {
+   "tex": "35 \\text{ kg}",
+   "unit": "kg",
+   "value": "35",
+   "words": "o‘ttiz besh kilogramm"
+  },
+  "values": [
+   {
+    "name": "total_potatoes",
+    "color": 1,
+    "label": "Jami kartoshka",
+    "value": "175"
+   },
+   {
+    "name": "day2_day3_ratio",
+    "color": 2,
+    "label": "Ikkinchi kun uchinchi kunga nisbatan",
+    "value": "1,5"
+   },
+   {
+    "name": "day1_day2_ratio",
+    "color": 3,
+    "label": "Birinchi kun ikkinchi kunga nisbatan",
+    "value": "2,4"
+   }
+  ],
+  "formula": null,
+  "shortcut": null,
+  "real_life": null,
+  "problem_ok": true,
+  "problem_note": null
+ },
+ "message": null,
+ "retryable": false,
+ "created_at": "2026-10-05T11:04:23.635633Z"
+}

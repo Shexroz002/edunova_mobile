@@ -101,6 +101,23 @@ String formatRelative(DateTime date, {DateTime? now}) {
 }
 
 /// Relative time without the trailing "oldin", for narrow stat tiles:
+/// When something in the future comes back: `ertaga`, `3 kundan keyin`.
+///
+/// [formatRelativeShort] answers "how long ago" and collapses every future
+/// date to "hozir", so a review schedule needs its own wording.
+String formatUntil(DateTime date, {DateTime? now}) {
+  final today = (now ?? DateTime.now()).toLocal();
+  final target = date.toLocal();
+  final days = DateTime(target.year, target.month, target.day)
+      .difference(DateTime(today.year, today.month, today.day))
+      .inDays;
+
+  if (days <= 0) return 'bugun';
+  if (days == 1) return 'ertaga';
+  if (days < 7) return '$days kundan keyin';
+  return formatDate(target);
+}
+
 /// `hozir`, `5 daq`, `2 soat`, `3 kun`, then a date.
 String formatRelativeShort(DateTime date, {DateTime? now}) {
   final difference = (now ?? DateTime.now()).difference(date.toLocal());

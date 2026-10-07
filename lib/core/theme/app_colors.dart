@@ -125,6 +125,22 @@ class AppColors extends ThemeExtension<AppColors> {
   static Color readable(Color color, {required bool dark}) =>
       (dark ? _darkTwin(color) : _lightTwin(color)) ?? color;
 
+  // ── Maths values in a solution ─────────────────────────────────────────
+  //
+  // A solution paints up to three key numbers of a problem, and keeps each
+  // number's colour from the problem text onto the board. Green, red and amber
+  // are left out on purpose: they already mean right, wrong and warning.
+  // Measured as text: at least 5.2:1 on the card and on the board surface in
+  // both themes (the first light picks, 0284C7 and DB2777, failed).
+  static const _mathDark = [Color(0xFF38BDF8), Color(0xFFC4B5FD), Color(0xFFF472B6)];
+  static const _mathLight = [Color(0xFF0369A1), Color(0xFF7C3AED), Color(0xFFBE185D)];
+
+  /// Colour [index] (1, 2 or 3) for a maths value in this theme.
+  static Color mathValue(int index, {required bool dark}) {
+    final palette = dark ? _mathDark : _mathLight;
+    return palette[(index - 1).clamp(0, palette.length - 1)];
+  }
+
   /// Soft translucent background for a colored icon/badge (≈12% alpha).
   static Color tint(Color color, [int alpha = 0x1F]) => color.withAlpha(alpha);
 
@@ -184,6 +200,9 @@ extension AppColorsX on BuildContext {
 
   /// [color] adjusted so it is readable as text in the current theme.
   Color readable(Color color) => AppColors.readable(color, dark: isDark);
+
+  /// Colour of maths value [index] (1, 2 or 3) in the current theme.
+  Color mathValue(int index) => AppColors.mathValue(index, dark: isDark);
 
   bool get isDark => Theme.of(this).brightness == Brightness.dark;
 }

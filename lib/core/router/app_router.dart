@@ -16,6 +16,8 @@ import '../../features/groups/presentation/group_detail_screen.dart';
 import '../../features/groups/presentation/group_session_result_screen.dart';
 import '../../features/groups/presentation/groups_screen.dart';
 import '../../features/home/home_screen.dart';
+import '../../features/mistakes/presentation/mistakes_screen.dart';
+import '../../features/mistakes/presentation/review_screen.dart';
 import '../../features/notifications/presentation/notifications_screen.dart';
 import '../../features/profile/presentation/profile_edit_screen.dart';
 import '../../features/profile/presentation/profile_screen.dart';
@@ -27,6 +29,10 @@ import '../../features/session/presentation/play/play_screen.dart';
 import '../../features/session/presentation/result_screen.dart';
 import '../../features/session/presentation/review_screen.dart';
 import '../../features/shell/student_shell.dart';
+import '../../features/solution/presentation/question_solution_screen.dart';
+import '../../features/solution/presentation/solve_confirm_screen.dart';
+import '../../features/solution/presentation/solve_home_screen.dart';
+import '../../features/solution/presentation/solve_request_screen.dart';
 import '../../features/statistics/statistics_screen.dart';
 import '../../features/tests/presentation/quiz_detail_screen.dart';
 import '../../features/tests/presentation/tests_screen.dart';
@@ -50,8 +56,26 @@ class Routes {
   static const results = '/results';
   static const notifications = '/notifications';
   static const competitionNew = '/competition/new';
+  static const mistakes = '/mistakes';
+  static const mistakeReview = '/mistakes/review';
+  static const solve = '/solve';
+  static const solveConfirm = '/solve/confirm';
+  static const solveRequest = '/solve/request';
+  static const questionSolution = '/solution/question';
 
   static const _public = {login, register};
+
+  /// A problem the student brought in, by photo or by typing.
+  static String solveRequestPath(int id) => '$solveRequest/$id';
+
+  /// The solution of a finished test's question; [chosen] is the student's option.
+  static String questionSolutionPath(int id, {String? chosen, String? subject}) {
+    final query = {
+      if (chosen != null && chosen.isNotEmpty) 'chosen': chosen,
+      if (subject != null && subject.isNotEmpty) 'subject': subject,
+    };
+    return Uri(path: '$questionSolution/$id', queryParameters: query.isEmpty ? null : query).toString();
+  }
 }
 
 /// Reads an integer path parameter (0 if missing or invalid).
@@ -162,6 +186,31 @@ final routerProvider = Provider<GoRouter>((ref) {
       // Guruhlar and Suhbatlar keep their routes so the links into them — a
       // group invite, a friend's chat — still resolve.
       GoRoute(path: Routes.friends, builder: (_, __) => const FriendsScreen()),
+      GoRoute(path: Routes.mistakes, builder: (_, __) => const MistakesScreen()),
+      GoRoute(
+        path: Routes.mistakeReview,
+        builder: (_, state) =>
+            MistakeReviewScreen(subject: state.uri.queryParameters['subject']),
+      ),
+      GoRoute(path: Routes.solve, builder: (_, __) => const SolveHomeScreen()),
+      GoRoute(
+        path: Routes.solveConfirm,
+        builder: (_, state) => SolveConfirmScreen(
+          draft: state.extra is SolveDraft ? state.extra! as SolveDraft : const SolveDraft(subject: 'matematika'),
+        ),
+      ),
+      GoRoute(
+        path: '${Routes.solveRequest}/:id',
+        builder: (_, state) => SolveRequestScreen(requestId: _intParam(state, 'id')),
+      ),
+      GoRoute(
+        path: '${Routes.questionSolution}/:id',
+        builder: (_, state) => QuestionSolutionScreen(
+          questionId: _intParam(state, 'id'),
+          chosen: state.uri.queryParameters['chosen'],
+          subject: state.uri.queryParameters['subject'],
+        ),
+      ),
       GoRoute(path: Routes.groups, builder: (_, __) => const GroupsScreen()),
       GoRoute(path: Routes.chats, builder: (_, __) => const ChatsScreen()),
       StatefulShellRoute.indexedStack(

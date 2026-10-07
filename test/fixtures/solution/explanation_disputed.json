@@ -1,0 +1,11 @@
+{
+ "status": "disputed",
+ "explanation_id": null,
+ "question_text": "Aritmetik progressiyaning birinchi hadi $a_1 = 5$ va ayirmasi $d = 3$ bo'lsa, uning 10-hadini toping.",
+ "correct_option": "D",
+ "model_option": "A",
+ "student_may_be_right": true,
+ "solution": null,
+ "hint": null,
+ "message": "Sizning javobingiz (A) to‘g‘ri bo‘lishi mumkin. Bu savolni ikki marta mustaqil yechganda A javob chiqdi, tizimda esa D belgilangan. Javob kaliti xato bo‘lishi mumkin — savol tekshirish ro‘yxatiga qo‘shildi."
+}

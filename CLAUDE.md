@@ -11,14 +11,32 @@ opens a private chat. Still out of scope: the **room chat inside the waiting roo
 `chat_message` event on `/ws/quiz/sessions/{id}` is a separate, unpersisted feature.
 
 ## Sources of truth
-These projects are **read-only**. Never modify them.
 
 | What | Where | Notes |
 |---|---|---|
-| Backend (FastAPI) | `../quiz_app` | Runs at `http://127.0.0.1:8000`. Swagger at `/docs`, schema at `/openapi.json`. |
+| Backend (FastAPI) | `../quiz_app` | **Writable** (owner decision, 2026-10-05). Runs at `http://127.0.0.1:8000`. Swagger at `/docs`, schema at `/openapi.json`. |
 | Web frontend (UI/UX reference) | `../edunova_frontend` | Runs at `http://127.0.0.1:5174`. Student pages in `src/app/pages/student/*`. Layout: `src/app/layouts/StudentLayout.tsx`. Theme: `src/app/components/ThemeContext.tsx`. Shared modals: `src/app/components/*`. Create-quiz modal: `CreateQuizModal` in `src/app/pages/teacher/QuizzesPage.tsx`. |
 | Screen analysis | `docs/student-pages-analysis.md` | Uzbek. Per screen: what is real vs mock, and web bugs to avoid. |
 | API behaviour notes | `docs/api-notes.md` | Quirks verified against the live server. |
+
+The web frontend and the two docs are **read-only**; never modify them.
+
+### Working in the backend
+`../quiz_app` is a working directory. A feature the student app needs may be built there, following
+that project's own layout (`models` / `repositories` / `services` / `schemas` / `api`) and its
+conventions, not this one's. Three things to know:
+
+- **`get_db` yields a session and never commits.** Anything a GET writes — a derived table topped up
+  during a read, for instance — rolls back with the request unless the service commits for itself.
+- **It runs in Docker** (`docker-compose-local.yml`). `quiz_back` has `--reload`, so edits are picked
+  up; `quiz_celery` and `quiz_celery_beat` do not, so restart them after touching a task or the beat
+  schedule. Alembic cannot resolve the compose host names from outside, so run migrations in the
+  container or point `DATABASE_URL` at `localhost`.
+- **Teacher and Telegram code is shared.** A change to anything outside the student routes affects
+  the web app and the bot too, so keep the change additive unless the owner asks otherwise.
+
+Changing backend behaviour the app already relies on, altering another role's endpoint, or any
+destructive migration still needs the owner's go-ahead first.
 
 **When sources conflict:** live `/openapi.json` plus real responses win, then backend code, then the docs. The web frontend is the reference for **look, texts and flows only**, never for API correctness, because it has known bugs.
 
@@ -125,16 +143,34 @@ lib/
 - **Membership is enforced server-side**: a non-member gets `403` on HTTP and an `error` frame on the
   socket. Surface it, do not retry.
 
+## Solutions (Masala yechimi)
+- **The model is never told the answer.** A bank question is solved blind and kept only if it
+  lands on the key; two rounds agreeing on another option are a dispute, shown to the student as
+  such. Told the key, the model writes a fluent derivation of a wrong one (backend issue 59).
+- **Colour marks are `\hla{}`, `\hlb{}`, `\hlc{}`** — the server never stores a colour, the app
+  paints them from `AppColors.mathValue`. Never `\v1`: not a JSON escape, and already a LaTeX accent.
+- Prompts live in `../quiz_app/app/services/solution/prompts.py`, separate from quiz generation's,
+  and the model is the separate `SOLUTION_MODEL` setting. Changing one must not change the other.
+- **Every formula in prose is in `$…$`** (prompt rule). The app does not rely on it: prose goes
+  through `wrapBareTex`, one-line places through `texPreview`. Never strip `$` and show the rest —
+  that is how "\int \frac{…}" reached the history list.
+- Test against the live model sparingly: each solution is 1-4 calls and the key has a quota.
+
 ## Workflow rules
 - Work **phase by phase** (`docs/START_PROMPT.md`). After each phase:
   1. `flutter analyze` must show 0 errors and 0 warnings;
   2. `flutter test` must pass;
   3. run the app against the local backend;
-  4. update `PROGRESS.md`;
-  5. stop and summarize for the owner.
+  4. if the phase touched `../quiz_app`, call every endpoint it added or changed with real data and
+     read the server's access log for the app's own requests — three bugs in the mistake bank, one of
+     them a 500 on every call, survived a clean analyze, a passing test suite and a successful build;
+  5. update `PROGRESS.md`;
+  6. stop and summarize for the owner.
 - **Verify every endpoint with a real request before writing its model.** Never guess fields.
 - **Credentials:** take test credentials only from the env vars `EDUNOVA_TEST_USER` and `EDUNOVA_TEST_PASS`. Never write them to files or logs, never commit secrets.
 - **While exploring, never call endpoints with side effects** (create/join/start/finish sessions, invite, contact create, avatar upload, quiz generation) unless you are testing that exact flow. Never call:
   - `GET .../multiplayer/{id}/results/` (host-only, it rewrites scores);
   - `.../topic-statistic/` (always returns 500).
-- **Backend bugs:** write them to `docs/BACKEND_ISSUES.md` (endpoint, request, actual vs expected). Work around them in the client, never by editing `../quiz_app`.
+- **Testing a write against the owner's own account:** snapshot the rows first, run the flow, then
+  restore them exactly. Their history is real data, not a fixture.
+- **Backend bugs:** write them to `docs/BACKEND_ISSUES.md` (endpoint, request, actual vs expected) whether or not they get fixed — the list is the record of what the live server does. A bug in a flow you are building may be fixed in `../quiz_app`; one in an endpoint the app merely consumes is worked around in the client and left to the backend team, because other clients depend on the current behaviour.

@@ -1009,6 +1009,336 @@ carry no topic produced a single row whose percentage is the overall score by de
 seventh restatement wrapped in a heading and two dead filter chips. "Zaif mavzular yo'q — ajoyib!"
 is untouched: that answers a filter the student chose, it is not an empty state.
 
+## Xatolar banki — mistake bank (2026-10-05)
+
+The first feature built from the roadmap, and the first work in `../quiz_app`: the owner added the
+backend as a working directory, which overrides the read-only rule in `CLAUDE.md` — **that rule
+still needs updating**, or the next session will believe the backend is off limits.
+
+**Backend.** `mistake_reviews` holds only the schedule — `due_at`, `streak`, `wrong_count`,
+`cleared_at` — because the authoritative record of a wrong answer already exists in
+`attempt_answers`. The service therefore *syncs* the bank from answer history on read rather than
+hooking the answer path: one place, self-healing after any gap, and a student with months of
+history gets a full bank on first open with no backfill migration. Intervals are `(1, 3, 7)` days
+and two correct answers in a row clear a question. `GET /mistakes/overview/`,
+`GET /mistakes/review/`, `POST /mistakes/{id}/answer/`, plus `quiz.remind_mistake_bank` on Celery
+beat at 08:00, which skips anyone already reminded or already reviewed that day.
+
+Found while building: `get_db` yields a session and never commits, so rows flushed during a GET were
+rolled back with the request — the bank rendered correctly and then answered 404 forever. The sync
+commits for itself now.
+
+**Mobile.** `features/mistakes` with the bank screen, the review flow and the home row. A review is
+not a test: it creates no session, is absent from Natijalar and does not move the average, which is
+why the answer is revealed on choice rather than at the end, and why the summary leads with how many
+questions left the bank instead of a percentage.
+`formatUntil` is new — `formatRelativeShort` answers "how long ago" and collapses every future date
+to "hozir".
+
+The home row is hidden only while the bank is empty, not whenever nothing is due. The first rule was
+wrong for a reason worth recording: the row is the bank's only entry point, so dropping it on a quiet
+day made both "Bugun savol yo'q" and "Xatolar banki bo'sh" unreachable. With questions in the bank
+and none due it now reads "12 ta savol · ertaga qaytadi", muted and without the badge.
+
+Owner decisions in the code: competition mistakes count; no manual removal; no practising ahead of
+schedule; in-app notification only.
+
+Migration `20261005_0007` is applied to the local database and the three routes answer. Verified on
+device against localhost (`adb reverse tcp:8000`): the logged-in account has no wrong answers, so the
+row is correctly absent. The local database holds 513 wrong answers under other accounts (`shehroz`
+90, `tg_5700644405` 117), which is what the bank needs to be exercised end to end.
+
+Celery beat and the worker are restarted and carry the entry: beat lists `remind-mistake-bank-daily`
+at `<crontab: 0 8 * * *>` and the worker registers `quiz.remind_mistake_bank`. Run once by hand it
+returns `0` — correct, because nothing is in the bank yet, so nobody has a question due. The first
+real reminder goes out at 08:00 Asia/Tashkent once the bank has rows.
+
+### Verified end to end with real data (2026-10-05)
+
+Logging in as `shehroz` filled the bank on the first `overview` call: 90 rows, every one due, which
+matches the 90 distinct questions that account has answered wrongly. The run found three bugs in the
+feature and one in the data.
+
+1. **`GET /mistakes/review/` returned 500 for every subject.** `due_rows` eager-loaded the question
+   but not `question.images`, and the batch schema reads them; a lazy load inside the async service
+   raises `MissingGreenlet`. The access log shows it plainly — `overview` 200 eight times, every
+   `review` call 500. Images are eager-loaded now.
+2. **Subjects appeared twice.** The data holds `fizika` (16) and `Fizika` (12), `matematika` (54) and
+   `Matematika` (3), so the overview listed five subjects for three. `overview` now folds them
+   case-insensitively and keeps the first spelling as the label: matematika 55, fizika 28, Kimyo 5.
+3. **A subject filter returned a short batch.** It was applied after the query's limit, so "Fizika"
+   gave 17 of 28. The filter is in SQL now and matches any spelling.
+4. **Questions with no correct option** (87 in the database, 2 in this bank) can never be answered
+   right, so they would sit in the bank forever. `_answerable` keeps anything without exactly one
+   correct option out of the bank, the batch, the due count and the reminder. Logged as backend
+   issue 58, because a quiz containing one marks every student wrong too.
+
+The answer flow was then exercised on a healthy question: wrong → `streak 0`, `wrong_count+1`;
+correct → `streak 1`; correct again (a lower-case label is accepted) → `streak 2`, cleared; a cleared
+question → `404`. Both touched rows were restored to their snapshot afterwards, so the account's own
+bank is untouched.
+
+### Renamed to "Xatolarim" (owner decision, 2026-10-05)
+
+"Xatolar banki" was the only place in the feature still speaking the banking metaphor — every line
+inside it already said *takrorlash* ("BUGUN TAKRORLASH", "Takrorlashni boshlash", "Bugungi takror
+tugadi"). The title now says what the thing is and the body says what to do with it.
+
+The owner first proposed "Xatolarni takrorlash", which was dropped for two reasons: in Uzbek *xatoni
+takrorlash* means to make the mistake again, and it measures 286 dp against the 215 dp the home row
+leaves beside the icon and the badge, so it would have been clipped. "Xatolarim" is 129 dp, and the
+possessive matters — "Xatolar" is a verdict, "Xatolarim" is the student's own working set. A test now
+guards that the title is not ellipsized.
+
+The metaphor had leaked into four more lines, and the rename improved them:
+
+| Before | After |
+|---|---|
+| `4` ta savol bankdan chiqdi | `4` ta savolni o'zlashtirdingiz |
+| Bu savol bankdan chiqdi — … | Bu savolni o'zlashtirdingiz — … |
+| Bankda 86 ta savol qoldi. | 86 ta savol takrorlashda qoldi. |
+| BANKDAGI SAVOLLAR | BARCHA SAVOLLAR |
+
+The empty state became "Xatolaringiz yo'q" rather than "Hali xato qilmagansiz", because `total`
+counts open rows only: a student who has mastered everything lands on the same screen, and the
+warmer line would have been false for them.
+
+Code keeps its English names (`MistakeOverview`, `/mistakes`), which match the backend contract.
+
+### The review screen was not using the shared question widgets (2026-10-05)
+
+A maths question rendered as `$\frac{7}{8}$ dan $\frac{1}{4}$ ni ayiring.` on the device:
+`ReviewQuestion` drew the text with a plain `Text`, so every formula showed its own source. The same
+widget also dropped `tableMarkdown` and `imageUrls` entirely, which the batch already returns — a
+question with a table or a diagram was unreviewable, and nothing said so.
+
+The screen now uses what the rest of the app uses: `MathText`, `MarkdownTable`, `QuestionPicture` and
+`OptionTile`. The private `_Option` and `_OptionState` went with it (80 lines), since `OptionTile`
+already draws a letter circle, LaTeX text and the four states. One visible change: the "To'g'ri" and
+"Siz" word tags are now `OptionTile`'s state icons.
+
+`QuestionPicture` is `_QuestionImage` lifted out of `question_view.dart` so both screens share it; the
+name avoids the `QuestionImage` model in `features/tests/domain/quiz.dart`.
+
+A test now asserts that a `$\frac{}{}$` question draws `Math` widgets and that no `\frac` reaches the
+screen as text.
+
+### To'xtatilgan takliflar (2026-10-05)
+
+Ikkita feature o'rganilib, dizayni va rejasi yozildi, lekin **qurilmadi** — egasi aniq
+qaror qabul qilinmaguncha kutishni aytdi. Kodga, bazaga va migratsiyalarga tegilmagan.
+
+- `docs/design/blok-imtihon/` — DTM blok imtihoni. To'xtatuvchi sabab kontentda: majburiy
+  Tarix fanida 30 ta yaroqli savol bor, ya'ni feature 3 ta takrorlanmas imtihonga cheklanadi.
+- `docs/design/sertifikat/` — Milliy sertifikat. Tuzilma namunaviy testdan to'liq
+  aniqlandi (45 topshiriq, 55 javob katagi, 100 ball; yig'indi aniq 100,0 chiqib tasdiqlandi).
+  Hozirgi sxema 100 balldan 38,6 tasini ifodalay olmaydi, shuning uchun 8 ta alohida
+  `cert_*` jadval taklif qilingan. Rasmiy daraja Rasch + oqim statistikasiga bog'liq, ya'ni
+  ilova uni mustaqil hisoblay olmaydi. AI bilan kontent kiritish uchun uch qatlamli
+  tekshiruv taklif qilingan; mexanik validator prototipi `validate_prototip.py` da,
+  sinovda yettita sun'iy xatoning yettitasini ham ushladi.
+
+## Masala yechimi — step-by-step solutions (2026-10-05)
+
+Built to the second design (`docs/design/yechim/`), the one the owner accepted after rejecting the
+first as "hard for a school student". Every step is two parts: what the teacher says, in one or two
+plain sentences, and what is written on the board, with no arithmetic skipped. The plan comes
+before the maths, finished steps fold into one green line, "Tushunmadim" re-explains a step one
+operation per sentence, and the answer is also read aloud ("minus uchdan besh").
+
+Two modes, and they are not the same:
+
+- **A bank question** (Xatolarim, test review): solved once, checked against the key, stored and
+  served to everyone. Content, not chat.
+- **A student's own problem** (Bosh sahifa → Masala yechish): a photo or typed text, confirmed by
+  the student before anything is solved, then solved live. 10 a day.
+
+**Backend, all new.** Three tables (`question_explanations`, `solve_requests`,
+`explanation_feedback`), migration `20261006_0008`. The prompts live in their own file
+(`app/services/solution/prompts.py`), apart from quiz generation's. The model is `gemini-2.5-flash`
+through a separate setting, `SOLUTION_MODEL`, so quiz generation keeps `gemini-2.5-flash-lite`.
+Outside the new files only four lines were added: a router include, a model import, a Celery task
+import and seven settings. 256 backend tests pass, 18 of them new.
+
+**The key decision: the model is never told the answer.** The first plan was to give it the key and
+ask for an explanation. Measured against real questions, that would have been a disaster: in four
+of five sampled questions the key itself was wrong (backend issue 59), and a model told "the answer
+is 29" writes a fluent derivation of 29. Solved blind, a solution that lands on the key is evidence
+both are right; two rounds that agree on another option become a **dispute** — the student is told
+the key may be wrong, and "Siz haq bo‘lishingiz mumkin" when they picked that option.
+
+Found while testing against the live model, all fixed:
+
+- **`\v1` as the colour mark broke twice.** In JSON `\v` is not an escape, and the model's reply
+  once arrived as a line break followed by "v1"; in LaTeX `\v` is already the háček accent. The
+  marks are now `\hla`, `\hlb`, `\hlc`, and the validator rejects control characters.
+- Dollar signs inside board lines and a broken `answer.tex` ("35$ kg") — now hard validator rules.
+- **Unbounded thinking timed out**: the same problem took 24 s once and 129 s (504) the next time.
+  Thinking is now capped at 4096 tokens.
+- "Model busy" (503) needed more than one quick retry: now three, waiting 4 s and 10 s. A failed
+  problem can be sent again without spending the daily limit.
+- Line breaks inside sentences ("jami \n\n$175$") are flattened before storing.
+
+**Mobile.** `features/solution`: `SolutionView` (intro → steps → answer), a step card, the board,
+done rows, the physics given/find table and formula card, the word-problem bar, the answer card,
+feedback, the mistake sheet and the dispute card; three screens for the student's own problem.
+Entry points: a fourth quick action on the home page, "Qayerda adashdim?" after a wrong answer in
+Xatolarim and in test review. The value colours are new `AppColors.mathValue` tokens; the first
+light picks failed 4.5:1 and were replaced, and a test now holds that line. The tests run on real
+model replies captured from the server (`test/fixtures/solution/`). 369 tests pass, 20 new.
+
+`Info.plist` gained `NSCameraUsageDescription` and `NSPhotoLibraryUsageDescription`. Without the
+first, opening the camera crashes on iOS — which was already true of "Suratga olish" in chat.
+
+### Checked on the phone (2026-10-05)
+
+Walked through on the device with adb taps and screenshots: the home tile, the solve screen and its
+history, the physics and word-problem solutions from intro to answer, "Tushunmadim", a folded step
+reopened, the failed state and its free retry, and in Xatolarim both "Qayerda adashdim?" on 677 and
+the dispute on 675. Xatolarim rows touched by the test were snapshotted and restored exactly.
+
+Found on the device and fixed:
+
+- **The mistake sheet's last button sat under the system navigation bar.** The sheet now pads by
+  the bottom view inset.
+- The sheet said "Qayerda adashdingiz?" over a dispute, where the student may not have gone wrong;
+  it reads "Javobingiz haqida" there.
+- The dispute said the question was "sent for review"; nothing is sent, it is listed. It now says
+  "tekshirish ro'yxatiga qo'shildi".
+- The legend read "Kuch (N (Nyuton))": a unit that already has a bracket is no longer wrapped.
+- A formula alone on the board was drawn grey and looked disabled; it is muted only when working
+  follows it. Board lines got more room.
+- "1,5" rendered as "1, 5": LaTeX spaces a bare comma, so decimal commas are braced (`1{,}5`).
+- The retry button showed a play arrow; `EmptyView` gained an optional icon, existing callers keep
+  theirs.
+- Decimal points in board, bar and prose are normalised to the school comma on the server, and
+  stored rows were re-normalised.
+
+**The model was retired mid-day.** `gemini-2.5-flash` worked in the morning and answered
+`404 "no longer available to new users"` by the afternoon, so the student's typed problem failed.
+`SOLUTION_MODEL` is now the alias `gemini-flash-latest` (served by `gemini-3.8-flash`, checked via
+`model_version`), and every row records the concrete model behind it. Quiz generation's
+`gemini-2.5-flash-lite` was not touched and not tested.
+
+Once the 503s cleared, the student's own typed problem ("to'g'ri to'rtburchak, tomonlari 4 va 5")
+was retried from the app and solved end to end in 9 s by `gemini-3.8-flash` (7.2 s in the model).
+The new "asked" rule held live: "To‘g‘ri to‘rtburchakning yuzini topamiz." instead of the condition
+re-told. The check line was a real one ("20 : 5 = 4").
+
+### "Galereyadan rasm yuklasa ishlamayapti" (2026-10-05)
+
+The upload itself worked — both photos reached the server and passed the type check. Reading them
+failed, for a reason of mine: `recognize` sent `thinking_budget=0`, which `gemini-2.5-flash` took as
+"no thinking" but the newer models reject with **400 INVALID_ARGUMENT**. The model switch earlier in
+the day had broken every photo. Fixed, and more:
+
+- Reading a photo now uses its own light model, `SOLUTION_RECOGNIZE_MODEL = gemini-flash-lite-latest`
+  (served by `gemini-3.5-flash-lite`): 1.7-2.3 s, LaTeX intact, and a quota of its own.
+- **The key is on the free tier**: 20 requests a day per model
+  (`GenerateRequestsPerDayPerProjectPerModel-FreeTier`). The SDK raises 429 as a `ClientError`, so the
+  old "retry when busy" never even saw it. A spent day is now `SolutionQuotaError`, never retried,
+  and the student is told "kunlik limit tugadi, ertaga" instead of "birozdan keyin".
+- The app showed a fixed "Hozir yechib bo'lmadi" over every failure; it now shows the server's reason.
+- `SOLUTION_FALLBACK_MODELS` (`gemini-3.7-flash,gemini-3.5-flash`) takes over when the main model's
+  quota is spent, the model is withdrawn (404) or it stays busy after its retries (500/503).
+- **One deadline per task** (`SOLUTION_TASK_BUDGET_SEC = 120`, per call 60 s): a busy provider once
+  kept a student 199 s for a failure — 503s that took 79 s to come back, a 504 after 89 s. Now 118 s.
+- A task lost in a stack restart spun forever in the app: polling stopped after 3 minutes without
+  rebuilding the screen, and before the server's 4-minute recovery could requeue it. Polling now
+  runs 5 minutes, is counted rather than timed, and ends in its own "Yechim kechikyapti" state.
+
+The student's gallery photo (`6^{3x-2y}`) was read correctly; solving it is still waiting on the
+provider: the main model's daily quota is spent and the flash models answered 503/504 all evening.
+
+### Formulas shown as raw LaTeX (2026-10-07)
+
+Reported from the device, against the deployed server: history rows read "Agar \int \frac{x \cdot
+f(x)}{x^2+1} dx…", and collapsed steps read "\angle ACB = 68^\circ". Two causes:
+
+- The history row stripped the `$` signs and showed what was left — the LaTeX source.
+- The model wrote `summary` formulas without `$…$`, following the prompt's own example ("D = 49").
+
+Fixed on both sides. The prompt now requires `$…$` around every formula in every field that is not
+named "tex", with "$\angle ACB = 68^\circ$" as the example. The app no longer depends on it:
+`wrapBareTex` finds a formula written without dollars — a backslash command, `^` or `_`, grown over
+neighbouring variables, numbers and operators, stopping at words and never leaving a brace open —
+and every prose field goes through it, step titles included. One-line places (history, the progress
+header, the bar's labels) use `texPreview`, which turns LaTeX into symbols: "∫ (x · f(x))/(x²+1) dx",
+"6³ˣ⁻²ʸ". Tested on the exact strings from the screenshots. 385 tests pass.
+
+Not seen on the device: the phone was locked when the build went on, and it was left locked.
+
+### Mistral AI Studio as a home for the prompt (2026-10-07)
+
+Asked whether the prompt could live in Mistral AI Studio. From the docs:
+
+- **Skills** are for Vibe Work / Vibe Code — a `SKILL.md` folder loaded into an agent session, also
+  reachable by agents as MCP servers. Not callable from a backend that wants one structured answer.
+- **Prompts** (Beta, `/v2/prompts`) store and version text with variables; a backend fetches one by
+  id and version or alias and then calls the model itself. No execution endpoint; the model and the
+  JSON schema are not stored with it. It would move the prompt out of git — away from the tests that
+  guard it (the key is never named) — for an extra request per solve.
+
+Measured with the same prompt, schema and validator (3 calls, the backend's existing Mistral key;
+the schema converted from Gemini's dialect to standard JSON Schema):
+
+| | mistral-medium-latest | mistral-large-latest |
+|---|---|---|
+| Bank 677, solved blind | B = key, 11.6 s | — |
+| Word problem (35 kg) | **62.82 kg** — read "2,4 marta kam" as subtraction | **35 kg**, 25.7 s, took the smallest day as x |
+| Format | broken escapes (tab, form feed), "sakkiz ikkinchi" | clean; one sentence over |
+| Hints | 2 of 3 arithmetically wrong | — |
+
+The "choose the unknown so it multiplies" rule was confirmed live for the first time — by Large.
+
+The run exposed a validator gap that applies to Gemini too: tab and carriage return (what `\times`,
+`\text` and `\right` become with a single backslash) were not counted as broken escapes, and the
+bar's expressions were not checked at all. Fixed; on the real replies both Medium outputs are now
+caught and sent for repair, Large passes. 37 solution tests.
+
+Mistral's free Experiment tier is far roomier than Gemini's 20 requests a day, but it is meant for
+evaluation, and **inputs and outputs train Mistral's models unless opted out** (Admin → Privacy).
+Students' homework photos must not go there with the default on.
+
+**Not done:**
+- **Billing.** On the free tier, 20 requests a day per model is a handful of students, and free
+  traffic is the first to get "high demand" 503s. Nothing in the code fixes that; a paid tier does.
+- The rule for choosing the unknown in a word problem (multiply, never divide) is still untested
+  live; only a stored reply from the old model exists for that case.
+- No pre-generation: a bank question's first student waits for the model.
+- `gemini-2.5-flash-lite`, used by quiz generation, may face the same retirement; not checked.
+
+### The waiting screen, redesigned (2026-10-07)
+
+The wait is 10-40 s, sometimes more, and the student spent it looking at a dark screen with one small
+dot. On a phone that reads as "it broke". Design in `docs/design/yechim/kutish.html`; app only, no
+backend change.
+
+- **The problem stays on top** (`ProblemCard`, LaTeX shown as symbols), so the student knows what is
+  being solved.
+- **A board being written** (`WaitingBoard`): three well-known formulas for the subject, never the
+  student's own problem, with the last line writing itself out behind a pencil. Under reduced motion
+  it stands still.
+- **Four stages in words** (`WaitingStages`): "Masala o'qilmoqda" → "Masala o'qildi", and so on. The
+  server reports no progress, so a timer advances them (0 / 6 / 14 / 24 s). The last stage never
+  closes on time; only the real answer closes it.
+- **"Bilasizmi?"** from the second stage: hand-checked one-line rules chosen by subject (10 maths,
+  10 physics, 5 general), a new one every 7 s, starting at a random one.
+- **After 45 s** it says "Odatdagidan biroz uzoqroq ketyapti" and offers "Bosh sahifaga qaytish",
+  with where the solution will be waiting.
+- **Arrival:** all four stages tick and "Yechim tayyor! · N qadam" shows for 0.9 s before the
+  solution. A solution that was already there opens straight away, with no celebration.
+- **Gave up after 5 min:** "Yechim kechikyapti" keeps the problem in view, and "Qayta urinish" says
+  it does not count against the daily limit.
+
+The question screen now receives the subject (`questionSolutionPath(..., subject:)`, from the
+mistake sheet and the review screen), so a physics question gets the physics board and tips.
+
+Checked in dark and light at 390 and 320 dp, rendered with the real fonts (Roboto, KaTeX, emoji)
+in a throwaway golden test. That caught the stage labels losing the app's text style
+(`AnimatedDefaultTextStyle` replaces the ambient style rather than merging) and a hint that left
+"turadi." alone on the last line. 12 new tests, 397 pass.
+
 ## Next
 Tablet pass, part 2: test detali, guruh detali, sessiya natijasi, test ishlash, test yaratish and
 profil tahrirlash still need the same treatment.

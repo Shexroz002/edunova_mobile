@@ -87,11 +87,16 @@ class EmptyView extends StatelessWidget {
     this.subtitle,
     this.actionLabel,
     this.onAction,
+    this.actionIcon = Icons.play_arrow_rounded,
   });
 
   final IconData icon;
   final String title;
   final String? subtitle;
+
+  /// The button's icon. A play arrow suits "Test ishlash"; a retry wants a
+  /// refresh arrow instead.
+  final IconData actionIcon;
 
   /// Offered when the empty state has one obvious way out — "Test ishlash" on
   /// a results or statistics page that is waiting for a first test. Both parts
@@ -135,7 +140,7 @@ class EmptyView extends StatelessWidget {
                 width: 200,
                 child: GradientButton(
                   label: actionLabel!,
-                  icon: Icons.play_arrow_rounded,
+                  icon: actionIcon,
                   height: 46,
                   onPressed: onAction!,
                 ),

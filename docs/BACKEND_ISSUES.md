@@ -207,3 +207,51 @@ The endpoint also takes `status="running"` and the service never reads it.
 > the history row now carries `status`, `duration_minutes`, `deadline_at` and
 > `attempt_finished`; finishing sets the session to `finished`; and a second
 > finish returns `409`. Issue 57 is still open.
+
+## 58. 87 questions have no correct option, so they cannot be answered right
+
+**Verified on 2026-10-05 against the local database.**
+
+```sql
+select count(*) from questions q
+left join (select question_id, count(*) filter (where is_correct) ok
+           from options group by question_id) o on o.question_id = q.id
+where o.ok = 0 or o.ok is null;
+-- 87 of 1864
+```
+
+A few questions have more than one option marked correct.
+
+This is not only a mistake-bank problem: any quiz containing one of these questions marks **every**
+student wrong, whatever they pick, and the answer review then shows no key. The mistake bank makes it
+worse, because a question that can never be answered right never leaves the bank — so the client now
+excludes any question without exactly one correct option (`MistakeRepository._answerable`).
+
+**Expected:** a question cannot be saved, or generated, without exactly one correct option.
+
+## 59. Answer keys that contradict the question — found by the solution feature
+
+**Verified on 2026-10-05.** Each question below was solved twice, independently, by the solution
+model without being told the key. Both times it landed on the same option, and the arithmetic was
+then checked by hand:
+
+| Question | Key | Correct | Why |
+|---|---|---|---|
+| 675 | D (29) | **A (32)** | $a_{10} = a_1 + 9d = 5 + 27 = 32$; 29 is $a_9$ |
+| 506 | D (5) | **C (0)** | every fraction is ⅕, five of them make 1, so $x/135 = 0$ |
+| 678 | A (9) | **C (11)** | $a_5 = S_5 - S_4 = 35 - 24 = 11$ |
+| 185 | D (2) | very likely **C (1)** | only Earth's gravity acts on the Sun in this system |
+
+Students are being graded against these keys. `shehroz` answered 675 correctly — A — three times
+and was marked wrong each time; answering D was marked right. The question then sat in his mistake
+bank, teaching him that the right answer was wrong.
+
+The four came from a sample of five, but the sample was biased: they were taken from a mistake
+bank, and a wrong key pushes exactly such questions into it. The rate across the whole bank is
+unknown.
+
+**Expected:** these keys corrected. The solution feature keeps a list as it runs:
+
+```sql
+select question_id, payload->'disputed' from question_explanations where payload ? 'disputed';
+```

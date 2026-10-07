@@ -6,6 +6,7 @@ import 'badges.dart';
 import 'markdown_table.dart';
 import 'math_text.dart';
 import 'option_tile.dart';
+import 'question_picture.dart';
 
 /// Full question: meta line, text, optional table and images, and options.
 ///
@@ -63,7 +64,7 @@ class QuestionView extends StatelessWidget {
         ],
         for (final url in question.imageUrls) ...[
           const SizedBox(height: 14),
-          _QuestionImage(url: url),
+          QuestionPicture(url: url),
         ],
         const SizedBox(height: 20),
         for (final option in question.options) ...[
@@ -76,40 +77,6 @@ class QuestionView extends StatelessWidget {
           const SizedBox(height: 10),
         ],
       ],
-    );
-  }
-}
-
-class _QuestionImage extends StatelessWidget {
-  const _QuestionImage({required this.url});
-
-  final String url;
-
-  void _openZoom(BuildContext context) {
-    showDialog<void>(
-      context: context,
-      builder: (context) => Dialog(
-        insetPadding: const EdgeInsets.all(12),
-        child: InteractiveViewer(maxScale: 5, child: Image.network(url)),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => _openZoom(context),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: Image.network(
-          url,
-          fit: BoxFit.contain,
-          errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-          loadingBuilder: (context, child, progress) => progress == null
-              ? child
-              : const SizedBox(height: 160, child: Center(child: CircularProgressIndicator())),
-        ),
-      ),
     );
   }
 }
